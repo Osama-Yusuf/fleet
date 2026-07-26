@@ -78,41 +78,102 @@ graph TB
     B2_BRAIN -.->|symlink| BRAIN
     B2_FLEET -.->|symlink| FLEET
     B2_CLAUDE -.->|symlink| CLAUDE_DIR
+
+    classDef shared fill:#fff7ed,stroke:#f59e0b,color:#111827
+    classDef beeLink fill:#ecfdf5,stroke:#10b981,color:#111827
+    classDef code fill:#eff6ff,stroke:#3b82f6,color:#111827
+    class BRAIN,FLEET,CLAUDE_DIR shared
+    class B1_BRAIN,B1_FLEET,B1_CLAUDE,B2_BRAIN,B2_FLEET,B2_CLAUDE beeLink
+    class B1_CODE,B2_CODE code
 ```
 
-Every bee points to the same brain. Update it in one session, all others see it.
+Every bee points to the entire shared core—not only the brain. Tasks, history, permissions, and `CLAUDE.md` stay consistent across sessions.
+
+## A Bee's Lifecycle
+
+```mermaid
+flowchart LR
+    A["1 · Spawn<br/>isolated workspace"] --> B["2 · Claim<br/>visible task"]
+    B --> C["3 · Coordinate<br/>avoid collisions"]
+    C --> D["4 · Record<br/>decisions + progress"]
+    D --> E["5 · Resume<br/>continue with context"]
+```
 
 ## Init — Repo Hive
 
 The original dir keeps its name. Code moves into `bee1/`.
 
+```mermaid
+flowchart LR
+    subgraph BEFORE["BEFORE · standalone repo"]
+        direction TB
+        B_ROOT["sample-app/"]
+        B_REPO[".git/ · src/ · tests/"]
+        B_CORE["CLAUDE.md · .claude/"]
+        B_ROOT --> B_REPO
+        B_ROOT --> B_CORE
+    end
+
+    INIT(["fleet init"])
+
+    subgraph AFTER["AFTER · repo hive"]
+        direction TB
+        A_ROOT["sample-app/ · HIVE"]
+        A_CORE["SHARED CORE<br/>CLAUDE.md · .fleet/ · .claude/"]
+        A_BEE["bee1/ · original repo"]
+        A_FILES[".git/ · src/ · tests/"]
+        A_ROOT --> A_CORE
+        A_ROOT --> A_BEE --> A_FILES
+    end
+
+    BEFORE --> INIT --> AFTER
+
+    classDef shared fill:#fff7ed,stroke:#f59e0b,color:#111827
+    classDef bee fill:#ecfdf5,stroke:#10b981,color:#111827
+    classDef action fill:#eff6ff,stroke:#3b82f6,color:#111827
+    class A_CORE shared
+    class A_BEE,A_FILES bee
+    class INIT action
 ```
-BEFORE                              AFTER
-sample-app/                         sample-app/               ← hive
-  .git/                               CLAUDE.md              ← brain
-  src/                                 .fleet/  .claude/
-  tests/                               bee1/                  ← original repo
-  ...                                    .git/
-                                         CLAUDE.md → ../CLAUDE.md
-                                         src/  tests/
-                                       bee2/                  ← clone
-                                         .git/  (own branch)
-                                         CLAUDE.md → ../CLAUDE.md
-```
+
+`fleet init` creates `bee1`. Run `fleet spawn` afterward to create `bee2`, `bee3`, and beyond.
 
 ## Init — Brain Hive
 
 CLAUDE.md stays at hive level. Bees are just symlink dirs.
 
-```
-BEFORE                              AFTER
-research-notes/                     research-notes/           ← hive
-  CLAUDE.md                           CLAUDE.md              ← brain
-  source-material.pdf                   artifacts/             ← organized
-  routing.json                         backups/
-                                       bee1/
-                                         CLAUDE.md → ../CLAUDE.md
-                                         artifacts → ../artifacts
+```mermaid
+flowchart LR
+    subgraph BEFORE["BEFORE · knowledge workspace"]
+        direction TB
+        B_ROOT["research-notes/"]
+        B_BRAIN["CLAUDE.md"]
+        B_DATA["documents · data"]
+        B_ROOT --> B_BRAIN
+        B_ROOT --> B_DATA
+    end
+
+    INIT(["fleet init"])
+
+    subgraph AFTER["AFTER · brain hive"]
+        direction TB
+        A_ROOT["research-notes/ · HIVE"]
+        A_CORE["SHARED CORE<br/>CLAUDE.md · .fleet/ · .claude/"]
+        A_DATA["artifacts/ · backups/"]
+        A_BEE["bee1/ · linked workspace"]
+        A_ROOT --> A_CORE
+        A_ROOT --> A_DATA
+        A_ROOT --> A_BEE
+    end
+
+    BEFORE --> INIT --> AFTER
+
+    classDef shared fill:#fff7ed,stroke:#f59e0b,color:#111827
+    classDef bee fill:#ecfdf5,stroke:#10b981,color:#111827
+    classDef action fill:#eff6ff,stroke:#3b82f6,color:#111827
+    class A_CORE shared
+    class A_BEE,A_DATA bee
+    class INIT action
 ```
 
 ## Adopt
@@ -128,6 +189,14 @@ fleet adopt ../research-notes-copy
 ```
 
 Adopt moves the dir into the hive, merges brain content and `.claude/settings`, wires symlinks, and removes the old path.
+
+```mermaid
+flowchart LR
+    BEFORE["BEFORE<br/><br/>Hive: bee1 · bee2<br/>+<br/>Standalone: project-copy/"]
+    ADOPT(["fleet adopt project-copy/"])
+    AFTER["AFTER<br/><br/>Hive: bee1 · bee2 · bee3<br/>bee3 keeps its files<br/>and receives shared-core links"]
+    BEFORE --> ADOPT --> AFTER
+```
 
 ## Commands
 
