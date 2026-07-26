@@ -1,0 +1,1322 @@
+<title>fleet</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='12' y='1' width='3' height='3' fill='%23222'/%3E%3Crect x='18' y='1' width='3' height='3' fill='%23222'/%3E%3Crect x='13' y='4' width='3' height='3' fill='%23222'/%3E%3Crect x='17' y='4' width='3' height='3' fill='%23222'/%3E%3Crect x='13' y='7' width='7' height='3' fill='%23F0A840' rx='1'/%3E%3Crect x='10' y='10' width='13' height='3' fill='%23F0A840' rx='1'/%3E%3Crect x='5' y='13' width='7' height='3' fill='%23a8d8ea' rx='1'/%3E%3Crect x='21' y='13' width='7' height='3' fill='%23a8d8ea' rx='1'/%3E%3Crect x='10' y='13' width='13' height='3' fill='%23333'/%3E%3Crect x='4' y='16' width='7' height='3' fill='%23a8d8ea' rx='1'/%3E%3Crect x='22' y='16' width='7' height='3' fill='%23a8d8ea' rx='1'/%3E%3Crect x='10' y='16' width='13' height='3' fill='%23F0A840' rx='1'/%3E%3Crect x='11' y='19' width='11' height='3' fill='%23333'/%3E%3Crect x='12' y='22' width='9' height='3' fill='%23F0A840' rx='1'/%3E%3Crect x='13' y='25' width='7' height='3' fill='%23333' rx='1'/%3E%3Crect x='15' y='28' width='3' height='3' fill='%23333'/%3E%3C/svg%3E">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --mono:"SF Mono",SFMono-Regular,ui-monospace,Menlo,Consolas,monospace;
+  --sidebar:240px;--topbar:50px;--r:6px;--r-sm:4px;
+  --bg:#EFF1F6;--surface:#FFF;--raised:#FFF;--border:#D5DAE4;
+  --text:#1A2030;--text2:#5C6578;--text3:#96A0B4;
+  --accent:#3B7BF0;--accent-h:#2B68D8;--accent-bg:rgba(59,123,240,.06);
+  --green:#0FA760;--green-bg:rgba(15,167,96,.08);--green-glow:rgba(52,211,153,.5);
+  --amber:#D09000;--amber-bg:rgba(208,144,0,.08);
+  --red:#D83636;--red-bg:rgba(216,54,54,.06);
+  --shadow:0 1px 3px rgba(0,0,0,.06);--shadow-up:0 4px 16px rgba(0,0,0,.1);
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#090C14;--surface:#111620;--raised:#1A2030;--border:#252E40;
+  --text:#E0E5EE;--text2:#7B879C;--text3:#4A5468;
+  --accent:#5891F5;--accent-h:#6FA0FF;--accent-bg:rgba(88,145,245,.1);
+  --green:#34D399;--green-bg:rgba(52,211,153,.1);--green-glow:rgba(52,211,153,.5);
+  --amber:#F0A840;--amber-bg:rgba(240,168,64,.1);
+  --red:#EF5050;--red-bg:rgba(239,80,80,.1);
+  --shadow:0 1px 3px rgba(0,0,0,.3);--shadow-up:0 6px 20px rgba(0,0,0,.35);
+}}
+:root[data-theme="dark"]{
+  --bg:#090C14;--surface:#111620;--raised:#1A2030;--border:#252E40;
+  --text:#E0E5EE;--text2:#7B879C;--text3:#4A5468;
+  --accent:#5891F5;--accent-h:#6FA0FF;--accent-bg:rgba(88,145,245,.1);
+  --green:#34D399;--green-bg:rgba(52,211,153,.1);--green-glow:rgba(52,211,153,.5);
+  --amber:#F0A840;--amber-bg:rgba(240,168,64,.1);
+  --red:#EF5050;--red-bg:rgba(239,80,80,.1);
+  --shadow:0 1px 3px rgba(0,0,0,.3);--shadow-up:0 6px 20px rgba(0,0,0,.35);
+}
+:root[data-theme="light"]{
+  --bg:#EFF1F6;--surface:#FFF;--raised:#FFF;--border:#D5DAE4;
+  --text:#1A2030;--text2:#5C6578;--text3:#96A0B4;
+  --accent:#3B7BF0;--accent-h:#2B68D8;--accent-bg:rgba(59,123,240,.06);
+  --green:#0FA760;--green-bg:rgba(15,167,96,.08);--green-glow:rgba(52,211,153,.5);
+  --amber:#D09000;--amber-bg:rgba(208,144,0,.08);
+  --red:#D83636;--red-bg:rgba(216,54,54,.06);
+  --shadow:0 1px 3px rgba(0,0,0,.06);--shadow-up:0 4px 16px rgba(0,0,0,.1);
+}
+
+body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--accent);text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r-sm)}
+.tabnum{font-variant-numeric:tabular-nums}
+
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar);background:var(--surface);display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100;box-shadow:var(--shadow)}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.logo{font-family:var(--mono);font-weight:700;font-size:1rem;letter-spacing:-.02em;color:var(--accent)}
+.menu-btn{display:none;padding:6px;font-size:1.2rem;color:var(--text2);background:none;border:none;cursor:pointer;border-radius:var(--r-sm)}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 14px 5px 10px;border-radius:20px;font-size:.78rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);transition:border-color 150ms,background 150ms;white-space:nowrap}
+.pill:hover,.pill.open{border-color:var(--accent);background:var(--accent-bg)}
+.pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pill-count{color:var(--text2);font-weight:500;font-family:var(--mono);font-size:.7rem;margin-left:2px}
+
+.acct-panel{max-height:0;overflow:hidden;transition:max-height 300ms ease,opacity 200ms ease;opacity:0;background:var(--surface);border-bottom:1px solid var(--border);position:fixed;top:var(--topbar);left:0;right:0;z-index:90}
+.acct-panel.open{max-height:460px;opacity:1;overflow-y:auto}
+.acct-inner{padding:20px 24px;max-width:880px;margin:0 auto}
+.acct-inner h3{font-family:var(--mono);font-size:.875rem;margin-bottom:2px}
+.acct-meta{font-size:.75rem;color:var(--text3);margin-bottom:14px;word-break:break-all;font-family:var(--mono)}
+.stat-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.stat-card{background:var(--bg);border-radius:var(--r-sm);padding:10px 14px;min-width:110px}
+.stat-label{font-size:.625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.stat-val{font-family:var(--mono);font-size:1.25rem;font-weight:700;margin-top:1px}
+.chart-sec{margin-bottom:14px}
+.chart-label{font-size:.625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:6px}
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:44px;border-bottom:1px solid var(--border);padding-bottom:1px}
+.spark-bar{flex:1;border-radius:2px 2px 0 0;min-width:4px;transition:height 200ms ease;position:relative;cursor:default}
+.spark-bar::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);font-size:.625rem;font-family:var(--mono);background:var(--text);color:var(--bg);padding:2px 6px;border-radius:3px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 100ms;z-index:5}
+.spark-bar:hover::after{opacity:1}
+.model-bars{display:flex;flex-direction:column;gap:5px}
+.model-row{display:flex;align-items:center;gap:8px}
+.model-name{font-family:var(--mono);font-size:.6875rem;width:76px;text-align:right;color:var(--text2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.model-track{flex:1;height:14px;background:var(--bg);border-radius:7px;overflow:hidden}
+.model-fill{height:100%;border-radius:7px;transition:width 300ms ease}
+.model-count{font-size:.6875rem;color:var(--text3);width:60px;font-family:var(--mono);flex-shrink:0}
+.hour-chart{display:flex;align-items:flex-end;gap:1px;height:28px}
+.hour-bar{flex:1;background:var(--accent);opacity:.5;border-radius:1px 1px 0 0;min-width:1px}
+.no-data{font-size:.8125rem;color:var(--text3);padding:20px 0;text-align:center}
+
+.sidebar{position:fixed;top:var(--topbar);left:0;bottom:0;width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:50;transition:transform 200ms ease}
+.sidebar-top{padding:12px}
+.sidebar-label{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;font-size:.625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.sidebar-count{font-family:var(--mono);font-size:.625rem;background:var(--accent-bg);color:var(--accent);padding:1px 6px;border-radius:8px;min-width:18px;text-align:center}
+.hive-list{flex:1;overflow-y:auto;padding:0 8px}
+.stray-list{max-height:32%;overflow-y:auto;padding:0 8px 8px}
+.stray-item{border-left:3px solid var(--amber);background:var(--amber-bg)}
+.stray-item.running{border-left-color:var(--green);background:var(--green-bg)}
+.stray-item .hive-name{font-weight:500}
+.hive-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;margin-bottom:1px;position:relative;transition:background 120ms;border:none;width:100%;text-align:left;font-family:inherit;font-size:inherit;color:inherit;background:none}
+.hive-item:hover{background:var(--accent-bg)}
+.hive-item.active{background:var(--accent-bg)}
+.hive-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--accent);border-radius:0 2px 2px 0}
+.hive-name{font-family:var(--mono);font-size:.8125rem;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hive-item.active .hive-name{color:var(--accent)}
+.hive-badge{font-size:.5625rem;padding:1px 5px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.hive-badge.brain{background:var(--amber-bg);color:var(--amber)}
+.hive-badge.repo{background:var(--accent-bg);color:var(--accent)}
+.hive-bee-ct{font-size:.6875rem;color:var(--text3);font-family:var(--mono);flex-shrink:0}
+.sidebar-empty{font-size:.75rem;color:var(--text3);padding:16px 14px;text-align:center;line-height:1.6}
+.sidebar-bottom{padding:10px 12px;border-top:1px solid var(--border)}
+
+.content{margin-left:var(--sidebar);margin-top:var(--topbar);padding:24px;min-height:calc(100vh - var(--topbar));transition:margin-left 200ms ease}
+
+.empty{display:flex;align-items:center;justify-content:center;min-height:60vh;text-align:center;flex-direction:column;gap:16px}
+.empty svg{color:var(--text3);opacity:.35}
+.empty h2{font-family:var(--mono);font-size:1.125rem;font-weight:600;color:var(--text2)}
+.empty p{font-size:.8125rem;color:var(--text3);max-width:280px;line-height:1.6}
+.empty-actions{display:flex;gap:8px;margin-top:4px}
+
+.hive-head{margin-bottom:20px}
+.hive-title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hive-title{font-family:var(--mono);font-size:1.25rem;font-weight:700}
+.type-badge{font-size:.6875rem;padding:2px 8px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.type-badge.brain{background:var(--amber-bg);color:var(--amber)}
+.type-badge.repo{background:var(--accent-bg);color:var(--accent)}
+.hive-path{font-size:.6875rem;color:var(--text3);font-family:var(--mono);margin-top:4px;word-break:break-all}
+.hive-actions{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap}
+.stray-status{display:inline-flex;align-items:center;gap:7px;font-size:.75rem;font-weight:700;padding:4px 9px;border-radius:12px}
+.stray-status.active{color:var(--green);background:var(--green-bg)}
+.stray-status.asleep{color:var(--text3);background:var(--bg)}
+.stray-explain{font-size:.8125rem;color:var(--text2);line-height:1.6;max-width:680px;margin:12px 0 20px}
+.stray-info{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;max-width:680px;margin-bottom:18px}
+.stray-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+
+.section-label{font-size:.625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:10px}
+.bee-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;margin-bottom:28px}
+.bee-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 14px 14px 17px;box-shadow:var(--shadow);position:relative;transition:border-color 150ms,box-shadow 150ms,transform 150ms;overflow:hidden}
+.bee-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.bee-card.active::before{background:var(--green)}
+.bee-card.idle::before{background:var(--border)}
+.bee-card:hover{border-color:var(--accent);box-shadow:var(--shadow-up)}
+.bee-top{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.bee-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bee-dot.on{background:var(--green);box-shadow:0 0 6px var(--green-glow)}
+.bee-dot.warn{background:var(--amber);box-shadow:0 0 6px rgba(240,168,64,.5)}
+.bee-dot.off{background:var(--text3);opacity:.4}
+.bee-card.unclaimed::before{background:var(--amber)}
+.bee-label{font-family:var(--mono);font-weight:700;font-size:.875rem}
+.bee-task{font-size:.75rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.bee-branch{font-family:var(--mono);font-size:.6875rem;color:var(--accent);margin-bottom:2px}
+.bee-destroy{position:absolute;top:10px;right:10px;opacity:0;font-size:.75rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:var(--r-sm);transition:opacity 120ms,color 120ms,background 120ms}
+.bee-launch{position:absolute;top:10px;right:30px;opacity:0;font-size:.65rem;color:var(--text3);background:none;border:none;cursor:pointer;padding:4px 6px;border-radius:var(--r-sm);transition:opacity 120ms,color 120ms,background 120ms}
+.bee-card:hover .bee-destroy,.bee-card:hover .bee-launch{opacity:1}
+.bee-destroy:hover{color:var(--red);background:var(--red-bg)}
+.bee-launch:hover{color:var(--green);background:var(--green-bg)}
+.no-bees{font-size:.8125rem;color:var(--text3);padding:12px 0;margin-bottom:24px}
+.bee-card{cursor:pointer}
+.bee-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.bee-chip{display:inline-flex;align-items:center;gap:4px;font-size:.625rem;font-family:var(--mono);color:var(--text2);background:var(--bg);border-radius:3px;padding:2px 6px;letter-spacing:.02em}
+.bee-chip .chip-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.bee-detail{display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.bee-card.expanded .bee-detail{display:block}
+.bee-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.bee-detail-item{display:flex;flex-direction:column;gap:1px}
+.bee-detail-label{font-size:.5625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+.bee-detail-val{font-family:var(--mono);font-size:.8125rem;font-weight:600;color:var(--text)}
+.bee-detail-models{margin-top:8px}
+.bee-detail-models .model-tag{display:inline-flex;align-items:center;gap:4px;font-size:.6875rem;font-family:var(--mono);color:var(--text2);background:var(--bg);border-radius:var(--r-sm);padding:3px 8px;margin:2px 2px 0 0}
+.bee-detail-models .model-tag .m-dot{width:6px;height:6px;border-radius:50%}
+
+/* Bee life */
+.bee-life-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+.bee-life-back{margin-bottom:10px}
+.life-stats{display:grid;grid-template-columns:repeat(5,minmax(100px,1fr));gap:9px;margin-bottom:20px}
+.life-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;position:relative;overflow:hidden}
+.life-stat::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--stat-color,var(--accent))}
+.life-stat-val{font-family:var(--mono);font-size:1.25rem;font-weight:700;color:var(--text)}
+.life-stat-label{font-size:.5625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.life-tabs{display:flex;gap:3px;overflow-x:auto;border-bottom:1px solid var(--border);margin-bottom:18px}
+.life-tab{border:0;background:none;color:var(--text3);font:600 .75rem var(--sans);padding:9px 12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.life-tab:hover{color:var(--text)}
+.life-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.life-tab-count{font-family:var(--mono);font-size:.5625rem;background:var(--bg);padding:1px 5px;border-radius:8px;margin-left:4px}
+.timeline{position:relative;padding-left:27px;max-width:900px}
+.timeline::before{content:'';position:absolute;left:8px;top:8px;bottom:8px;width:1px;background:var(--border)}
+.timeline-event{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.timeline-dot{position:absolute;left:-25px;top:15px;width:13px;height:13px;border-radius:50%;background:var(--event-color,var(--text3));border:3px solid var(--bg);box-shadow:0 0 0 1px var(--border)}
+.timeline-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.event-kind{font-size:.5625rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--event-color,var(--text3))}
+.event-time{font-family:var(--mono);font-size:.625rem;color:var(--text3);margin-left:auto}
+.event-message{font-size:.8125rem;color:var(--text);line-height:1.55}
+.event-extra{font-size:.6875rem;color:var(--text3);margin-top:6px;line-height:1.5}
+.life-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.life-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.life-card-title{font-family:var(--mono);font-size:.8125rem;font-weight:700;color:var(--text);word-break:break-word}
+.life-card-meta{font-size:.6875rem;color:var(--text3);margin-top:5px;line-height:1.5}
+.touch-row{display:grid;grid-template-columns:minmax(260px,1.5fr) 3fr 42px;align-items:center;gap:12px;margin-bottom:10px}
+.tool-row{display:grid;grid-template-columns:minmax(130px,1fr) 3fr 42px;align-items:center;gap:10px;margin-bottom:8px}
+.touch-name,.tool-name{font-family:var(--mono);font-size:.6875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.touch-file{min-width:0}
+.touch-detail{font-size:.5625rem;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.touch-track,.tool-track{height:7px;border-radius:4px;background:var(--surface);overflow:hidden}
+.touch-fill,.tool-fill{height:100%;border-radius:4px;background:var(--accent)}
+.touch-count,.tool-count{text-align:right;font-family:var(--mono);font-size:.6875rem;color:var(--text3)}
+.life-empty{padding:32px;border:1px dashed var(--border);border-radius:var(--r);text-align:center;color:var(--text3);font-size:.8125rem}
+@media(max-width:900px){.life-stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.touch-row{grid-template-columns:minmax(150px,1.5fr) 2fr 32px}}
+@media(max-width:540px){.life-stats{grid-template-columns:repeat(2,1fr)}.bee-life-head{flex-direction:column}.touch-row{grid-template-columns:1fr 70px 28px}}
+
+.tab-group{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:3px;gap:2px;margin-bottom:16px}
+.tab-btn{padding:6px 16px;border-radius:var(--r-sm);font-size:.8125rem;font-weight:600;color:var(--text3);background:none;border:none;cursor:pointer;transition:all 120ms;font-family:inherit}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{background:var(--accent-bg);color:var(--accent)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.brain-area{width:100%;min-height:280px;font-family:var(--mono);font-size:.8125rem;line-height:1.7;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;color:var(--text);resize:vertical;transition:border-color 150ms}
+.brain-area:focus{border-color:var(--accent);outline:none}
+.brain-save{margin-top:8px}
+.md-display{font-size:.8125rem;white-space:pre-wrap;font-family:var(--mono);color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;max-height:400px;overflow-y:auto;line-height:1.7}
+.md-display:empty::after{content:"Nothing here yet.";color:var(--text3)}
+.md-display.rendered{white-space:normal;font-family:var(--sans);color:var(--text)}
+.md-display.rendered h1,.md-display.rendered h2,.md-display.rendered h3,.md-display.rendered h4{margin:1.2em 0 .4em;font-weight:700;color:var(--text);line-height:1.3}
+.md-display.rendered h1{font-size:1.35rem;border-bottom:1px solid var(--border);padding-bottom:.3em}
+.md-display.rendered h2{font-size:1.15rem;border-bottom:1px solid var(--border);padding-bottom:.25em}
+.md-display.rendered h3{font-size:1rem}
+.md-display.rendered h4{font-size:.9rem}
+.md-display.rendered p{margin:.5em 0}
+.md-display.rendered ul,.md-display.rendered ol{margin:.5em 0 .5em 1.5em}
+.md-display.rendered li{margin:.2em 0}
+.md-display.rendered code{font-family:var(--mono);font-size:.78rem;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 5px}
+.md-display.rendered pre{margin:.6em 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;overflow-x:auto;line-height:1.5}
+.md-display.rendered pre code{background:none;border:none;padding:0;font-size:.78rem}
+.md-display.rendered blockquote{margin:.5em 0;padding:.3em .8em;border-left:3px solid var(--accent);color:var(--text2);background:var(--accent-bg);border-radius:0 var(--r-sm) var(--r-sm) 0}
+.md-display.rendered a{color:var(--accent);text-decoration:underline}
+.md-display.rendered hr{border:none;border-top:1px solid var(--border);margin:1em 0}
+.md-display.rendered table{border-collapse:collapse;margin:.6em 0;width:100%;font-size:.8rem}
+.md-display.rendered th,.md-display.rendered td{border:1px solid var(--border);padding:5px 8px;text-align:left}
+.md-display.rendered th{background:var(--surface);font-weight:600}
+.md-display.rendered strong{font-weight:700;color:var(--text)}
+.md-display.rendered em{font-style:italic}
+.md-toggle{display:inline-flex;align-items:center;gap:0;margin-left:auto;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;font-size:.75rem;font-weight:600}
+.md-toggle button{padding:3px 10px;border:none;background:none;cursor:pointer;color:var(--text3);font-family:inherit;font-weight:inherit;font-size:inherit;transition:all 100ms}
+.md-toggle button:hover{color:var(--text2)}
+.md-toggle button.active{background:var(--accent-bg);color:var(--accent)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 14px;border-radius:var(--r-sm);font-weight:600;font-size:.8125rem;border:none;cursor:pointer;transition:all 120ms;font-family:inherit;line-height:1}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover:not(:disabled){background:var(--accent-h)}
+.btn-outline{border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.btn-outline:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn-ghost{background:none;color:var(--text2)}
+.btn-ghost:hover:not(:disabled){color:var(--text);background:var(--accent-bg)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover:not(:disabled){opacity:.9}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger:hover:not(:disabled){opacity:.9}
+.btn-sm{padding:5px 10px;font-size:.75rem}
+.btn-block{width:100%}
+input[type="text"]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:.8125rem;outline:none;transition:border-color 150ms}
+input[type="text"]:focus{border-color:var(--accent)}
+input[type="text"]::placeholder{color:var(--text3)}
+.field{margin-bottom:12px}
+.field-label{font-size:.6875rem;font-weight:600;color:var(--text2);margin-bottom:4px;display:block}
+.field-hint{font-size:.6875rem;color:var(--text3);margin-top:3px}
+.input-row{display:flex;gap:6px}
+.input-row input{flex:1}
+.browser{margin-top:6px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);display:none;overflow:hidden}
+.browser.open{display:block}
+.browser-head{display:flex;align-items:center;gap:4px;padding:5px 8px;border-bottom:1px solid var(--border);font-size:.6875rem;font-family:var(--mono);color:var(--text2);min-height:30px}
+.browser-up{background:none;border:none;cursor:pointer;color:var(--accent);font-size:.8125rem;padding:2px 6px;border-radius:var(--r-sm);line-height:1;flex-shrink:0}
+.browser-up:hover{background:var(--accent-bg)}
+.browser-crumb{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.browser-dirs{max-height:180px;overflow-y:auto;padding:2px 0}
+.browser-dir{display:block;width:100%;text-align:left;padding:5px 10px;cursor:pointer;font-size:.75rem;font-family:var(--mono);color:var(--text);background:none;border:none;transition:background 80ms,color 80ms}
+.browser-dir:hover{background:var(--accent-bg);color:var(--accent)}
+.browser-dir::before{content:'\25B8\00a0';color:var(--text3);font-size:.625rem}
+.browser-none{padding:12px 10px;font-size:.75rem;color:var(--text3);text-align:center}
+.browser-foot{padding:5px 8px;border-top:1px solid var(--border);display:flex;justify-content:flex-end}
+
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 180ms}
+.modal-bg.open{opacity:1;pointer-events:auto}
+.modal{background:var(--raised);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-up);padding:24px;width:90%;max-width:420px;transform:scale(.96);transition:transform 180ms}
+.modal-bg.open .modal{transform:scale(1)}
+.modal h3{font-family:var(--mono);font-size:.9375rem;font-weight:700;margin-bottom:4px}
+.modal .modal-desc{font-size:.8125rem;color:var(--text2);margin-bottom:16px;line-height:1.5}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.modal-output{margin-top:14px;font-size:.6875rem;font-family:var(--mono);color:var(--text2);background:var(--bg);padding:10px;border-radius:var(--r-sm);max-height:120px;overflow-y:auto;white-space:pre-wrap;display:none;border:1px solid var(--border)}
+
+.toast-stack{position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none}
+.toast{background:var(--raised);border:1px solid var(--border);box-shadow:var(--shadow-up);border-radius:var(--r-sm);padding:10px 16px;font-size:.8125rem;max-width:340px;pointer-events:auto;animation:toast-in 200ms ease;line-height:1.4}
+.toast.ok{border-left:3px solid var(--green)}
+.toast.err{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--accent)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes toast-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes toast-out{from{opacity:1;transform:none}to{opacity:0;transform:translateY(10px)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--green-glow)}50%{box-shadow:0 0 0 4px transparent}}
+.bee-dot.on{animation:pulse 2.5s ease-in-out infinite}
+@keyframes pulse-warn{0%,100%{box-shadow:0 0 0 0 rgba(240,168,64,.5)}50%{box-shadow:0 0 0 4px transparent}}
+.bee-dot.warn{animation:pulse-warn 2.5s ease-in-out infinite}
+
+@media(prefers-reduced-motion:reduce){
+  .toast,.modal,.sidebar,.content,.acct-panel,.bee-card,.bee-destroy,.spark-bar,.model-fill,.btn,.pill,.hive-item,.tab-btn,.bee-dot.on{transition:none!important;animation:none!important}
+}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);width:260px;z-index:80}
+  .sidebar.open{transform:translateX(0)}
+  .content{margin-left:0}
+  .menu-btn{display:block}
+  .hive-actions{flex-basis:100%}
+  .topbar-right{gap:4px}
+  .pill{font-size:.6875rem;padding:3px 8px}
+}
+@media(max-width:480px){
+  .bee-grid{grid-template-columns:1fr}
+  .stat-row{gap:8px}
+  .stat-card{min-width:80px;flex:1}
+  .content{padding:16px}
+}
+</style>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar">&#9776;</button>
+    <div class="logo" onclick="window._unselectHive()" style="cursor:pointer"><svg width="18" height="18" viewBox="0 0 32 32" style="vertical-align:-2px;margin-right:5px"><rect x="12" y="1" width="3" height="3" fill="#222"/><rect x="18" y="1" width="3" height="3" fill="#222"/><rect x="13" y="4" width="3" height="3" fill="#222"/><rect x="17" y="4" width="3" height="3" fill="#222"/><rect x="13" y="7" width="7" height="3" fill="#F0A840" rx="1"/><rect x="10" y="10" width="13" height="3" fill="#F0A840" rx="1"/><rect x="5" y="13" width="7" height="3" fill="#a8d8ea" rx="1"/><rect x="21" y="13" width="7" height="3" fill="#a8d8ea" rx="1"/><rect x="10" y="13" width="13" height="3" fill="#444"/><rect x="4" y="16" width="7" height="3" fill="#a8d8ea" rx="1"/><rect x="22" y="16" width="7" height="3" fill="#a8d8ea" rx="1"/><rect x="10" y="16" width="13" height="3" fill="#F0A840" rx="1"/><rect x="11" y="19" width="11" height="3" fill="#444"/><rect x="12" y="22" width="9" height="3" fill="#F0A840" rx="1"/><rect x="13" y="25" width="7" height="3" fill="#444" rx="1"/><rect x="15" y="28" width="3" height="3" fill="#444"/></svg>fleet</div>
+  </div>
+  <div class="topbar-right" id="pills"></div>
+</div>
+
+<div class="acct-panel" id="acctPanel"><div class="acct-inner" id="acctInner"></div></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <button class="btn btn-accent btn-block" onclick="openCreateModal()">+ New Hive</button>
+  </div>
+  <div class="sidebar-label"><span>Hives</span><span class="sidebar-count tabnum" id="hiveCt">0</span></div>
+  <nav class="hive-list" id="hiveList"></nav>
+  <div class="sidebar-label"><span>Stray bees</span><span class="sidebar-count tabnum" id="strayCt">0</span></div>
+  <nav class="stray-list" id="strayList"></nav>
+  <div class="sidebar-bottom">
+    <button class="btn btn-ghost btn-block btn-sm" onclick="doScan()">Scan for hives &amp; bees</button>
+  </div>
+</aside>
+
+<main class="content" id="main">
+  <div class="empty" id="emptyState">
+    <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><path d="M26 4L46 15.5V38.5L26 50L6 38.5V15.5L26 4Z" stroke="currentColor" stroke-width="1.5"/><path d="M26 14L38 21V35L26 42L14 35V21L26 14Z" stroke="currentColor" stroke-width="1"/></svg>
+    <h2>No hive selected</h2>
+    <p>Pick one from the sidebar, or start something new.</p>
+    <div class="empty-actions">
+      <button class="btn btn-accent" onclick="openCreateModal()">+ Create Hive</button>
+      <button class="btn btn-ghost" onclick="doScan()">Scan</button>
+    </div>
+  </div>
+  <div id="hiveView" style="display:none"></div>
+</main>
+
+<div class="modal-bg" id="createModal">
+  <div class="modal">
+    <h3>Create a new hive</h3>
+    <p class="modal-desc">Turn a project directory into a fleet hive with shared brain and worker bees.</p>
+    <div class="field">
+      <label class="field-label">Project path</label>
+      <div class="input-row">
+        <input type="text" id="createPath" placeholder="/path/to/project" oninput="validateCreate()">
+        <button class="btn btn-outline btn-sm" type="button" onclick="toggleBrowser('create')">Browse</button>
+      </div>
+      <div class="browser" id="createBrowser"></div>
+    </div>
+    <div class="field">
+      <label class="field-label">Hive name <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+      <input type="text" id="createName" placeholder="defaults to directory name">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn btn-accent" id="createSubmit" onclick="doCreate()" disabled>Create</button>
+    </div>
+    <div class="modal-output" id="createOutput"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="spawnModal">
+  <div class="modal">
+    <h3>Spawn a new bee</h3>
+    <p class="modal-desc" id="spawnDesc">Create a new worker session in this hive.</p>
+    <div class="field" id="spawnField">
+      <label class="field-label">Branch name <span style="font-weight:400;color:var(--text3)">(optional)</span></label>
+      <input type="text" id="spawnBranch" placeholder="defaults to current branch">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeSpawnModal()">Cancel</button>
+      <button class="btn btn-accent" id="spawnSubmit" onclick="doSpawn()">Spawn</button>
+    </div>
+    <div class="modal-output" id="spawnOutput"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="adoptModal">
+  <div class="modal">
+    <h3>Adopt a directory</h3>
+    <p class="modal-desc">Import an existing directory as the next bee in this hive.</p>
+    <div class="field">
+      <label class="field-label">Directory path</label>
+      <div class="input-row">
+        <input type="text" id="adoptPath" placeholder="/path/to/directory" oninput="validateAdopt()">
+        <button class="btn btn-outline btn-sm" type="button" onclick="toggleBrowser('adopt')">Browse</button>
+      </div>
+      <div class="browser" id="adoptBrowser"></div>
+      <div class="field-hint">The directory will be moved into the hive and wired with symlinks.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeAdoptModal()">Cancel</button>
+      <button class="btn btn-accent" id="adoptSubmit" onclick="doAdopt()" disabled>Adopt</button>
+    </div>
+    <div class="modal-output" id="adoptOutput"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="destroyModal">
+  <div class="modal">
+    <h3>Destroy bee</h3>
+    <p class="modal-desc" id="destroyMsg">Are you sure? This removes the bee and its contents permanently.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeDestroyModal()">Cancel</button>
+      <button class="btn btn-danger" id="destroySubmit" onclick="doDestroy()">Destroy</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toasts"></div>
+
+<script>
+(function(){
+  let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', activeTab='brain', tabCache={};
+  let openAcct=null, destroyBee=null, mdMode='rendered';
+
+  const $=id=>document.getElementById(id);
+
+  function esc(s){
+    if(s==null)return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function renderMd(src){
+    if(!src)return '';
+    let h=esc(src);
+    // code blocks
+    h=h.replace(/```(\w*)\n([\s\S]*?)```/g,(_,lang,code)=>'<pre><code>'+code.trim()+'</code></pre>');
+    // tables
+    h=h.replace(/((?:^\|.+\|$\n?)+)/gm,function(block){
+      const rows=block.trim().split('\n').filter(r=>r.trim());
+      if(rows.length<2)return block;
+      const sep=rows[1];
+      if(!/^\|[\s:\-|]+\|$/.test(sep.trim()))return block;
+      const hdr=rows[0].split('|').filter((_,i,a)=>i>0&&i<a.length-1).map(c=>'<th>'+c.trim()+'</th>').join('');
+      const body=rows.slice(2).map(r=>{
+        const cells=r.split('|').filter((_,i,a)=>i>0&&i<a.length-1).map(c=>'<td>'+c.trim()+'</td>').join('');
+        return '<tr>'+cells+'</tr>';
+      }).join('');
+      return '<table><thead><tr>'+hdr+'</tr></thead><tbody>'+body+'</tbody></table>';
+    });
+    // blockquotes
+    h=h.replace(/^&gt; (.+)$/gm,'<blockquote>$1</blockquote>');
+    // headings
+    h=h.replace(/^#### (.+)$/gm,'<h4>$1</h4>');
+    h=h.replace(/^### (.+)$/gm,'<h3>$1</h3>');
+    h=h.replace(/^## (.+)$/gm,'<h2>$1</h2>');
+    h=h.replace(/^# (.+)$/gm,'<h1>$1</h1>');
+    // hr
+    h=h.replace(/^---+$/gm,'<hr>');
+    // bold + italic
+    h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+    h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');
+    // inline code
+    h=h.replace(/`([^`]+)`/g,'<code>$1</code>');
+    // links
+    h=h.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+    // unordered lists
+    h=h.replace(/(^- .+$(\n- .+$)*)/gm,function(block){
+      return '<ul>'+block.replace(/^- (.+)$/gm,'<li>$1</li>')+'</ul>';
+    });
+    // ordered lists
+    h=h.replace(/(^\d+\. .+$(\n\d+\. .+$)*)/gm,function(block){
+      return '<ol>'+block.replace(/^\d+\. (.+)$/gm,'<li>$1</li>')+'</ol>';
+    });
+    // paragraphs
+    h=h.replace(/\n{2,}/g,'</p><p>');
+    h='<p>'+h+'</p>';
+    h=h.replace(/<p>\s*(<h[1-4]|<ul|<ol|<pre|<table|<blockquote|<hr)/g,'$1');
+    h=h.replace(/(<\/h[1-4]>|<\/ul>|<\/ol>|<\/pre>|<\/table>|<\/blockquote>|<hr>)\s*<\/p>/g,'$1');
+    h=h.replace(/<p>\s*<\/p>/g,'');
+    return h;
+  }
+  function fmtNum(n){
+    if(n==null)return '0';
+    if(n>=1e9)return (n/1e9).toFixed(1)+'B';
+    if(n>=1e6)return (n/1e6).toFixed(1)+'M';
+    if(n>=1e3)return (n/1e3).toFixed(1)+'K';
+    return String(n);
+  }
+  async function api(path,opts={}){
+    const r=await fetch(path,opts);
+    return r.json();
+  }
+
+  function toast(msg,type='info'){
+    const el=document.createElement('div');
+    el.className='toast '+type;
+    el.textContent=msg;
+    $('toasts').appendChild(el);
+    setTimeout(()=>{el.style.animation='toast-out 200ms ease forwards';setTimeout(()=>el.remove(),220)},3500);
+  }
+
+  const ACCT_C=['#4C8BF5','#A855F7','#22C55E','#F59E0B','#EC4899','#06B6D4'];
+  const MODEL_C={opus:'#4C8BF5',sonnet:'#22C55E',haiku:'#F59E0B',fable:'#A855F7'};
+  function modelColor(n){
+    const lo=n.toLowerCase();
+    for(const[k,v]of Object.entries(MODEL_C)){if(lo.includes(k))return v;}
+    return '#6B7280';
+  }
+  function accountColor(name){
+    const index=accounts.findIndex(account=>account.name===name);
+    if(index>=0)return ACCT_C[index%ACCT_C.length];
+    let hash=0;for(const char of String(name||''))hash=(hash*31+char.charCodeAt(0))>>>0;
+    return ACCT_C[hash%ACCT_C.length];
+  }
+
+  // ── Accounts ──
+  function renderPills(){
+    $('pills').innerHTML=accounts.map((a,i)=>{
+      const cnt=a.stats?(a.stats.totalMessages||a.stats.totalSessions||0):0;
+      const cls=openAcct===i?' open':'';
+      return `<button class="pill${cls}" onclick="window._toggleAcct(${i})"><span class="pill-dot" style="background:${ACCT_C[i%ACCT_C.length]}"></span>${esc(a.name)}<span class="pill-count tabnum">${fmtNum(cnt)}</span></button>`;
+    }).join('');
+  }
+
+  window._toggleAcct=function(i){
+    const p=$('acctPanel');
+    if(openAcct===i){p.classList.remove('open');openAcct=null;renderPills();return;}
+    openAcct=i;
+    renderAcctDetail(accounts[i],i);
+    p.classList.add('open');
+    renderPills();
+  };
+
+  function renderAcctDetail(a,idx){
+    const s=a.stats;
+    const color=ACCT_C[idx%ACCT_C.length];
+    let h=`<h3 style="color:${color}">${esc(a.name)}</h3>`;
+    h+=`<div class="acct-meta">${esc(a.config_dir)} &middot; ${esc(a.command||'claude')}</div>`;
+    if(!s){h+='<div class="no-data">No usage data collected yet</div>';$('acctInner').innerHTML=h;return;}
+    const sourceLabel=s.source==='session-files'?'live session files':'Claude stats cache';
+    const freshness=s.updatedAt?new Date(s.updatedAt).toLocaleString():'unknown';
+    h+=`<div class="acct-meta" title="Source: ${esc(sourceLabel)}. Fleet refreshes this while the dashboard is open.">Source: ${esc(sourceLabel)} &middot; updated ${esc(freshness)}</div>`;
+
+    h+=`<div class="stat-row">
+      <div class="stat-card"><div class="stat-label">Messages</div><div class="stat-val tabnum">${fmtNum(s.totalMessages)}</div></div>
+      <div class="stat-card"><div class="stat-label">Sessions</div><div class="stat-val tabnum">${fmtNum(s.totalSessions)}</div></div>
+      ${s.firstSession?`<div class="stat-card"><div class="stat-label">Since</div><div class="stat-val" style="font-size:.875rem">${s.firstSession.slice(0,10)}</div></div>`:''}
+    </div>`;
+
+    if(s.dailyActivity&&s.dailyActivity.length){
+      const mx=Math.max(...s.dailyActivity.map(d=>d.messageCount||0),1);
+      h+=`<div class="chart-sec"><div class="chart-label">Activity (${s.dailyActivity.length} days)</div><div class="sparkline">`;
+      for(const d of s.dailyActivity){
+        const pct=Math.max(((d.messageCount||0)/mx)*100,2);
+        const tip=(d.date||'').slice(5)+': '+(d.messageCount||0);
+        h+=`<div class="spark-bar" style="height:${pct}%;background:${color}" data-tip="${esc(tip)}"></div>`;
+      }
+      h+='</div></div>';
+    }
+
+    if(s.modelUsage&&Object.keys(s.modelUsage).length){
+      const models=Object.entries(s.modelUsage).map(([n,d])=>[n,d.output+d.input+d.cacheRead+d.cacheWrite]).sort((a,b)=>b[1]-a[1]);
+      const mx=Math.max(...models.map(t=>t[1]),1);
+      h+='<div class="chart-sec"><div class="chart-label">Model token usage</div><div class="model-bars">';
+      for(const[name,total]of models){
+        const pct=(total/mx)*100;
+        const c=modelColor(name);
+        h+=`<div class="model-row"><div class="model-name">${esc(name)}</div><div class="model-track"><div class="model-fill" style="width:${pct}%;background:${c}"></div></div><div class="model-count tabnum">${fmtNum(total)}</div></div>`;
+      }
+      h+='</div></div>';
+    }
+
+    if(s.hourCounts&&Object.keys(s.hourCounts).length){
+      const hrs=[];for(let i=0;i<24;i++)hrs.push(s.hourCounts[String(i)]||0);
+      const mx=Math.max(...hrs,1);
+      h+='<div class="chart-sec"><div class="chart-label">By hour</div><div class="hour-chart">';
+      for(let i=0;i<24;i++){
+        const pct=Math.max((hrs[i]/mx)*100,1);
+        h+=`<div class="hour-bar" style="height:${pct}%" title="${i}:00 &mdash; ${hrs[i]}"></div>`;
+      }
+      h+='</div></div>';
+    }
+
+    $('acctInner').innerHTML=h;
+  }
+
+  // ── Sidebar ──
+  function renderSidebar(){
+    $('hiveCt').textContent=hives.length;
+    const list=$('hiveList');
+    if(!hives.length){
+      list.innerHTML='<div class="sidebar-empty">No hives registered yet.<br>Create one or scan to discover existing hives.</div>';
+    }else{
+      list.innerHTML=hives.map(h=>{
+        const active=sel&&sel.name===h.name;
+        const ct=(h.bees||[]).length;
+        const t=h.type==='brain'?'brain':(h.type||'repo');
+        return `<button class="hive-item${active?' active':''}" onclick="window._selHive('${esc(h.name)}')">
+          <span class="hive-name">${esc(h.name)}</span>
+          <span class="hive-badge ${t}">${t}</span>
+          <span class="hive-bee-ct tabnum">${ct}</span>
+        </button>`;
+      }).join('');
+    }
+    $('strayCt').textContent=strays.length;
+    $('strayList').innerHTML=strays.length?strays.map(s=>{
+      const status=s.active?'Active':'Asleep';
+      const help=s.active
+        ?'Active: a Claude CLI process is open in this folder. It may be working or waiting for input.'
+        :'Asleep: Claude session history exists, but no Claude CLI process is currently open.';
+      return `<button class="hive-item stray-item${s.active?' running':''}${selectedStray&&selectedStray.path===s.path?' active':''}" onclick="window._selStray('${esc(s.path)}')" title="${esc(help)}&#10;${esc(s.path)}" aria-label="${esc(s.name)} — ${status}. ${help}">
+        <span class="bee-dot ${s.active?'on':'off'}"></span>
+        <span class="hive-name">${esc(s.name)}</span>
+        <span class="hive-bee-ct">${status}</span>
+      </button>`;
+    }).join(''):'<div class="sidebar-empty">No standalone projects detected.</div>';
+  }
+
+  window._selHive=function(name){
+    if(sel&&sel.name===name){window._unselectHive();return;}
+    const h=hives.find(x=>x.name===name);
+    if(!h)return;
+    selectedStray=null;selectedBee=null;beeLifeData=null;
+    sel=h;
+    tabCache={};activeTab='brain';
+    document.title='fleet · '+h.name;
+    location.hash=encodeURIComponent(h.name);
+    renderSidebar();renderHiveView();loadTab('brain');
+    if(window.innerWidth<=768)$('sidebar').classList.remove('open');
+  };
+
+  window._unselectHive=function(){
+    sel=null;selectedStray=null;selectedBee=null;beeLifeData=null;tabCache={};
+    document.title='fleet';
+    history.replaceState(null,'',location.pathname);
+    renderSidebar();renderHiveView();
+  };
+
+  window._selStray=function(strayPath){
+    const stray=strays.find(s=>s.path===strayPath);
+    if(!stray)return;
+    if(selectedStray&&selectedStray.path===strayPath){window._unselectHive();return;}
+    sel=null;selectedStray=stray;selectedBee=null;beeLifeData=null;tabCache={};
+    document.title='fleet · '+stray.name;
+    history.replaceState(null,'',location.pathname);
+    renderSidebar();renderHiveView();
+    if(window.innerWidth<=768)$('sidebar').classList.remove('open');
+  };
+
+  window.copyStrayPath=async function(command=false){
+    if(!selectedStray)return;
+    const value=command?`cd '${selectedStray.path.replace(/'/g,"'\\''")}' && claude --continue`:selectedStray.path;
+    try{await navigator.clipboard.writeText(value);toast(command?'Resume command copied':'Path copied','ok');}
+    catch(e){toast('Could not copy to clipboard','err');}
+  };
+
+  window.makeStrayHive=function(){
+    if(!selectedStray)return;
+    openCreateModal(selectedStray.path);
+  };
+
+  window._openBee=async function(bee){
+    if(!sel)return;
+    selectedBee=bee;beeLifeData=null;beeTab='timeline';
+    location.hash=`${encodeURIComponent(sel.name)}/${encodeURIComponent(bee)}`;
+    renderHiveView();
+    try{
+      beeLifeData=await api(`/api/hives/${encodeURIComponent(sel.name)}/bees/${encodeURIComponent(bee)}`);
+      if(beeLifeData.error)throw new Error(beeLifeData.error);
+      document.title='fleet · '+sel.name+' · '+bee;
+      renderHiveView();
+    }catch(e){
+      selectedBee=null;
+      toast('Could not load bee history','err');
+      renderHiveView();
+    }
+  };
+
+  window._backToHive=function(){
+    selectedBee=null;beeLifeData=null;beeTab='timeline';
+    document.title='fleet · '+(sel?sel.name:'fleet');
+    if(sel)location.hash=encodeURIComponent(sel.name);
+    renderHiveView();
+  };
+
+  window._beeTab=function(tab){
+    beeTab=tab;
+    if(sel&&selectedBee)location.hash=`${encodeURIComponent(sel.name)}/${encodeURIComponent(selectedBee)}/${encodeURIComponent(tab)}`;
+    renderHiveView();
+  };
+
+  function eventColor(type){
+    return {
+      task_claimed:'#22C55E',task_changed:'#F59E0B',task_completed:'#4C8BF5',
+      task_released:'#6B7280',commit:'#A855F7',decision:'#F59E0B',
+      discovery:'#06B6D4',blocker:'#EF4444',test:'#22C55E',
+      journaled:'#4C8BF5',milestone:'#A855F7',bee_created:'#6B7280'
+    }[type]||'#6B7280';
+  }
+
+  function eventLabel(type){
+    return String(type||'event').replace(/^task_/,'task ').replace(/_/g,' ');
+  }
+
+  function relativeFilePath(target,base){
+    if(!target||!base||!target.startsWith('/')||!base.startsWith('/'))return target;
+    const targetParts=target.split('/').filter(Boolean);
+    const baseParts=base.split('/').filter(Boolean);
+    let common=0;
+    while(common<targetParts.length&&common<baseParts.length&&targetParts[common]===baseParts[common])common++;
+    const relative=[...Array(baseParts.length-common).fill('..'),...targetParts.slice(common)].join('/');
+    return relative||'.';
+  }
+
+  function renderBeeLife(){
+    if(!beeLifeData){
+      return '<div class="empty" style="min-height:50vh"><span class="spinner"></span><h2>Loading bee history…</h2></div>';
+    }
+    const b=beeLifeData,s=b.summary||{},git=b.git||{},claude=b.claude||{};
+    const counts={
+      timeline:(b.timeline||[]).length,git:(git.commits||[]).length,
+      files:(b.files||[]).length,decisions:(b.decisions||[]).length,
+      tools:(claude.tools||[]).length,sessions:(claude.sessions||[]).length
+    };
+    let o=`<button class="btn btn-ghost btn-sm bee-life-back" onclick="_backToHive()">← ${esc(sel.name)}</button>
+      <div class="bee-life-head"><div>
+        <div class="hive-title-row"><span class="hive-title">${esc(b.name)}</span>${b.branch?`<span class="type-badge repo">${esc(b.branch)}</span>`:''}</div>
+        <div class="hive-path">${esc(b.path)}</div>
+        <div class="bee-task" style="margin-top:8px">${esc(b.currentTask||'No task currently claimed')}</div>
+      </div>
+      <button class="btn btn-green btn-sm" onclick="doLaunch('${esc(b.name)}')">Launch bee</button></div>`;
+    const stats=[
+      ['Tasks',s.tasks||0,'#22C55E'],['Commits',s.commits||0,'#A855F7'],
+      ['Files',s.files||0,'#4C8BF5'],['Insights',s.decisions||0,'#F59E0B'],
+      ['Tool calls',s.tools||0,'#06B6D4']
+    ];
+    o+='<div class="life-stats">'+stats.map(x=>`<div class="life-stat" style="--stat-color:${x[2]}"><div class="life-stat-val">${fmtNum(x[1])}</div><div class="life-stat-label">${x[0]}</div></div>`).join('')+'</div>';
+    const tabs=[['timeline','Timeline'],['git','Git & PRs'],['files','Files'],['decisions','Decisions'],['tools','Tools'],['sessions','Sessions']];
+    o+='<div class="life-tabs">'+tabs.map(([id,label])=>`<button class="life-tab${beeTab===id?' active':''}" onclick="_beeTab('${id}')">${label}<span class="life-tab-count">${counts[id]}</span></button>`).join('')+'</div>';
+
+    if(beeTab==='timeline'){
+      const events=b.timeline||[];
+      if(!events.length)o+='<div class="life-empty">No history yet. Claims, journal entries, commits, and <code>fleet event</code> milestones will appear here.</div>';
+      else{
+        o+='<div class="timeline">';
+        for(const e of events){
+          const color=eventColor(e.type);
+          let extra='';
+          if(e.type==='commit'&&e.meta)extra=`${esc(e.meta.short||'')} · ${esc(e.meta.author||'')} · ${(e.meta.files||[]).length} file(s)`;
+          else if(e.meta&&e.meta.why)extra=`Why: ${esc(e.meta.why)}`;
+          else if(e.meta&&e.meta.previous)extra=`Previous: ${esc(e.meta.previous)}`;
+          o+=`<div class="timeline-event" style="--event-color:${color}"><span class="timeline-dot"></span>
+            <div class="timeline-top"><span class="event-kind">${esc(eventLabel(e.type))}</span><span class="event-time">${esc(e.at?new Date(e.at).toLocaleString():'')}</span></div>
+            <div class="event-message">${esc(e.message||'')}</div>${extra?`<div class="event-extra">${extra}</div>`:''}</div>`;
+        }
+        o+='</div>';
+      }
+    }else if(beeTab==='git'){
+      const commits=git.commits||[],prs=git.prs||[];
+      if(prs.length){
+        o+='<div class="section-label">Pull request references</div><div class="life-grid" style="margin-bottom:18px">';
+        for(const pr of prs)o+=`<div class="life-card"><div class="life-card-title">PR #${pr.number}</div><div class="life-card-meta">${esc(pr.subject)} · ${esc(pr.source)}</div></div>`;
+        o+='</div>';
+      }
+      o+='<div class="section-label">Commits</div>';
+      if(!commits.length)o+='<div class="life-empty">No commits found since this bee was created.</div>';
+      else{
+        o+='<div class="life-grid">';
+        for(const c of commits)o+=`<div class="life-card"><div class="life-card-title">${esc(c.subject)}</div><div class="life-card-meta">${esc(c.short)} · ${esc(c.author)}<br>${esc(new Date(c.at).toLocaleString())} · ${(c.files||[]).length} file(s)</div></div>`;
+        o+='</div>';
+      }
+    }else if(beeTab==='files'){
+      const files=b.files||[],mx=Math.max(...files.map(f=>f.touches),1);
+      if(!files.length)o+='<div class="life-empty">No Git or Claude file activity found for this bee yet.</div>';
+      else for(const f of files){
+        const detail=[f.gitTouches?`${f.gitTouches} Git`:'',f.reads?`${f.reads} reads`:'',f.writes?`${f.writes} writes`:''].filter(Boolean).join(' · ');
+        const display=relativeFilePath(f.file,b.path);
+        o+=`<div class="touch-row"><div class="touch-file" title="${esc(f.file)}${detail?' — '+esc(detail):''}"><div class="touch-name">${f.dirty?'● ':''}${esc(display)}</div><div class="touch-detail">${esc(detail||'activity detected')}</div></div><div class="touch-track"><div class="touch-fill" style="width:${Math.max(f.touches/mx*100,3)}%"></div></div><div class="touch-count">${f.touches}</div></div>`;
+      }
+    }else if(beeTab==='decisions'){
+      const decisions=b.decisions||[];
+      if(!decisions.length)o+='<div class="life-empty">No decisions or discoveries recorded yet. Use <code>fleet event decision</code> or <code>fleet event discovery</code>.</div>';
+      else{
+        o+='<div class="life-grid">';
+        for(const d of decisions)o+=`<div class="life-card" style="border-left:3px solid ${eventColor(d.type)}"><div class="event-kind" style="--event-color:${eventColor(d.type)}">${esc(eventLabel(d.type))}</div><div class="life-card-title" style="margin-top:7px">${esc(d.message)}</div><div class="life-card-meta">${esc(new Date(d.at).toLocaleString())}</div></div>`;
+        o+='</div>';
+      }
+    }else if(beeTab==='tools'){
+      const tools=claude.tools||[],mx=Math.max(...tools.map(t=>t.count),1);
+      if(!tools.length)o+='<div class="life-empty">No Claude tool calls could be attributed to this bee.</div>';
+      else for(const t of tools)o+=`<div class="tool-row"><div class="tool-name">${esc(t.name)}</div><div class="tool-track"><div class="tool-fill" style="width:${Math.max(t.count/mx*100,3)}%"></div></div><div class="tool-count">${t.count}</div></div>`;
+    }else if(beeTab==='sessions'){
+      const metadata=b.sessionMetadata||[],sessions=claude.sessions||[];
+      if(metadata.length){
+        o+='<div class="section-label">Usage and cost by account</div><div class="life-grid" style="margin-bottom:20px">';
+        for(const m of metadata){
+          const color=accountColor(m.account);
+          const mins=m.duration>0?Math.round(m.duration/60000):0;
+          o+=`<div class="life-card" style="border-top:2px solid ${color}">
+            <div class="life-card-title"><span class="chip-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${color};margin-right:6px"></span>${esc(m.account)}</div>
+            <div class="bee-detail-grid" style="margin-top:12px">
+              <div class="bee-detail-item"><span class="bee-detail-label">Current model</span><span class="bee-detail-val" style="color:${modelColor(m.currentModel||'')}">${esc(m.currentModel||'unknown')}</span></div>
+              <div class="bee-detail-item"><span class="bee-detail-label">Speed</span><span class="bee-detail-val">${esc(m.speed||'standard')}</span></div>
+              <div class="bee-detail-item"><span class="bee-detail-label">Cost</span><span class="bee-detail-val">$${(m.cost||0).toFixed(4)}</span></div>
+              <div class="bee-detail-item"><span class="bee-detail-label">Sessions</span><span class="bee-detail-val">${m.sessions||0}</span></div>
+              <div class="bee-detail-item"><span class="bee-detail-label">Input tokens</span><span class="bee-detail-val">${fmtNum(m.inputTokens||0)}</span></div>
+              <div class="bee-detail-item"><span class="bee-detail-label">Output tokens</span><span class="bee-detail-val">${fmtNum(m.outputTokens||0)}</span></div>
+              <div class="bee-detail-item"><span class="bee-detail-label">Duration</span><span class="bee-detail-val">${mins?mins+'m':'—'}</span></div>
+            </div>
+            ${(m.models||[]).length?`<div class="bee-detail-models">${m.models.map(model=>`<span class="model-tag"><span class="m-dot" style="background:${modelColor(model)}"></span>${esc(model)}</span>`).join('')}</div>`:''}
+          </div>`;
+        }
+        o+='</div>';
+      }
+      o+='<div class="section-label">Attributed session history</div>';
+      if(!sessions.length)o+='<div class="life-empty">No Claude sessions could be attributed to this bee.</div>';
+      else{
+        o+='<div class="life-grid">';
+        for(const x of sessions)o+=`<div class="life-card"><div class="life-card-title">${esc(x.account)} · ${fmtNum(x.messages)} messages</div><div class="life-card-meta">${x.startedAt?esc(new Date(x.startedAt).toLocaleString()):'unknown start'} → ${x.endedAt?esc(new Date(x.endedAt).toLocaleString()):'active'}<br>${(x.tools||[]).map(t=>`${esc(t.name)} ${t.count}`).join(' · ')||'No tools'}</div></div>`;
+        o+='</div>';
+      }
+    }
+    return o;
+  }
+
+  // ── Hive View ──
+  function renderHiveView(){
+    if(!sel&&!selectedStray){
+      $('hiveView').style.display='none';
+      $('emptyState').style.display='flex';
+      document.title='fleet';
+      return;
+    }
+    $('emptyState').style.display='none';
+    $('hiveView').style.display='block';
+
+    if(selectedBee){
+      $('hiveView').innerHTML=renderBeeLife();
+      return;
+    }
+
+    if(selectedStray){
+      const s=selectedStray;
+      const status=s.active?'Active':'Asleep';
+      const explanation=s.active
+        ?'A Claude Code CLI process is open in this directory. Active only means the process is running—it may be working or simply waiting for your next prompt.'
+        :'Claude Code session history was found for this directory, but no CLI process is currently running. You can safely resume its latest session.';
+      const sessionList=s.session||[];
+      const sessionCount=sessionList.reduce((sum,item)=>sum+(item.sessions||0),0);
+      const accounts=[...new Set(sessionList.map(item=>item.account))].join(', ')||'unknown';
+      const activeAccounts=(s.activeAccounts||[]).join(', ')||'unknown';
+      const models=[...new Set(sessionList.flatMap(item=>item.models||[]))].join(', ')||'unknown';
+      let o='<div class="hive-head">';
+      o+=`<div class="hive-title-row"><span class="hive-title">${esc(s.name)}</span><span class="stray-status ${s.active?'active':'asleep'}" title="${esc(explanation)}"><span class="bee-dot ${s.active?'on':'off'}"></span>${status}</span><span class="type-badge brain" title="This Claude workspace does not belong to a registered Fleet hive.">stray bee</span></div>`;
+      o+=`<div class="hive-path">${esc(s.path)}</div>`;
+      o+=`<p class="stray-explain">${esc(explanation)}</p>`;
+      o+=`<div class="stray-info"><div class="stray-info-grid">
+        <div class="bee-detail-item"><span class="bee-detail-label">State</span><span class="bee-detail-val">${status}</span></div>
+        ${s.active?`<div class="bee-detail-item"><span class="bee-detail-label">Active account</span><span class="bee-detail-val">${esc(activeAccounts)}</span></div>`:''}
+        <div class="bee-detail-item"><span class="bee-detail-label">Saved sessions</span><span class="bee-detail-val">${sessionCount}</span></div>
+        <div class="bee-detail-item"><span class="bee-detail-label">Session accounts</span><span class="bee-detail-val">${esc(accounts)}</span></div>
+        <div class="bee-detail-item"><span class="bee-detail-label">Models seen</span><span class="bee-detail-val">${esc(models)}</span></div>
+        ${s.active?`<div class="bee-detail-item"><span class="bee-detail-label">Process</span><span class="bee-detail-val">PID ${(s.activePids||[]).join(', ')}</span></div>`:''}
+      </div></div>`;
+      o+=`<div class="hive-actions">
+        <button class="btn btn-accent btn-sm" onclick="copyStrayPath(true)">Copy resume command</button>
+        <button class="btn btn-outline btn-sm" onclick="copyStrayPath()">Copy path</button>
+        <button class="btn btn-green btn-sm" onclick="makeStrayHive()" ${s.active?'disabled title="Stop the active Claude CLI before restructuring this directory."':'title="Convert this standalone workspace into a Fleet hive."'}>Make this a hive</button>
+      </div></div>`;
+      $('hiveView').innerHTML=o;
+      return;
+    }
+
+    const h=sel;
+    const t=h.type==='brain'?'brain':(h.type||'repo');
+    const bees=h.bees||[];
+    const isRepo=h.type!=='brain';
+
+    let o='<div class="hive-head">';
+    o+=`<div class="hive-title-row"><span class="hive-title">${esc(h.name)}</span><span class="type-badge ${t}">${t}</span></div>`;
+    o+=`<div class="hive-path">${esc(h.path||'')}</div>`;
+    o+=`<div class="hive-actions">
+      <button class="btn btn-accent btn-sm" onclick="openSpawnModal()">+ Spawn</button>
+      <button class="btn btn-accent btn-sm" onclick="openAdoptModal()">+ Adopt</button>
+      <button class="btn btn-green btn-sm" onclick="doLaunchAll()">Launch All</button>
+      <button class="btn btn-outline btn-sm" onclick="doDoctor()">Doctor</button>
+      <button class="btn btn-outline btn-sm" onclick="doClean()">Clean</button>
+    </div>`;
+    o+='</div>';
+
+    o+='<div class="section-label">Bees</div>';
+    if(!bees.length){
+      o+='<div class="no-bees">No bees yet. Spawn one to get started.</div>';
+    } else {
+      o+='<div class="bee-grid">';
+      for(const b of bees){
+        const on=b.active;
+        const unclaimed=b.task&&b.task.includes('unclaimed');
+        const current=b.current;
+        const dotClass=on?(unclaimed?'warn':'on'):'off';
+        const cardClass=on?(unclaimed?'active unclaimed':'active'):'idle';
+        o+=`<div class="bee-card ${cardClass}" onclick="window._openBee('${esc(b.name)}')">
+          <button class="bee-destroy" onclick="event.stopPropagation();openDestroyModal('${esc(b.name)}')" aria-label="Destroy ${esc(b.name)}" title="Destroy">&times;</button>
+          <button class="bee-launch" onclick="event.stopPropagation();doLaunch('${esc(b.name)}')" aria-label="Launch ${esc(b.name)}" title="Launch">&#9654;</button>
+          <div class="bee-top"><span class="bee-dot ${dotClass}"></span><span class="bee-label">${esc(b.name)}</span></div>
+          <div class="bee-task" title="${esc(b.task||'')}">${esc(b.task||'idle')}</div>
+          ${b.branch?`<div class="bee-branch">${esc(b.branch)}</div>`:''}`;
+        if(current){
+          const acColor=accountColor(current.account);
+          o+='<div class="bee-meta">';
+          o+=`<span class="bee-chip" title="Current account"><span class="chip-dot" style="background:${acColor}"></span>${esc(current.account)}</span>`;
+          if(current.model)o+=`<span class="bee-chip" title="Current model" style="color:${modelColor(current.model)}">${esc(current.model)}</span>`;
+          if(current.cost>0)o+=`<span class="bee-chip" title="Current session cost">$${current.cost.toFixed(2)}</span>`;
+          o+='</div>';
+        }
+        o+=`</div>`;
+      }
+      o+='</div>';
+    }
+
+    o+=`<div class="tab-group">
+      <button class="tab-btn${activeTab==='brain'?' active':''}" onclick="window._tab('brain')">Brain</button>
+      <button class="tab-btn${activeTab==='journal'?' active':''}" onclick="window._tab('journal')">Journal</button>
+      <button class="tab-btn${activeTab==='profile'?' active':''}" onclick="window._tab('profile')">Profile</button>
+      <div class="md-toggle">
+        <button class="${mdMode==='rendered'?'active':''}" onclick="window._mdMode('rendered')">Rendered</button>
+        <button class="${mdMode==='raw'?'active':''}" onclick="window._mdMode('raw')">Raw</button>
+      </div>
+    </div>`;
+
+    const brainRaw=mdMode==='raw'||activeTab==='brain';
+    o+=`<div class="tab-content${activeTab==='brain'?' active':''}" data-tab="brain">`;
+    if(mdMode==='raw'){
+      o+=`<textarea class="brain-area" id="brainEditor" placeholder="CLAUDE.md content...">${esc(tabCache.brain||'')}</textarea>
+      <button class="btn btn-accent btn-sm brain-save" onclick="saveBrain()">Save</button>`;
+    } else {
+      o+=`<div class="md-display rendered" id="brainRendered">${renderMd(tabCache.brain||'')}</div>
+      <button class="btn btn-ghost btn-sm brain-save" onclick="window._mdMode('raw')">Edit</button>`;
+    }
+    o+=`</div>`;
+    if(mdMode==='raw'){
+      o+=`<div class="tab-content${activeTab==='journal'?' active':''}" data-tab="journal"><div class="md-display" id="journalContent">${esc(tabCache.journal||'')}</div></div>`;
+      o+=`<div class="tab-content${activeTab==='profile'?' active':''}" data-tab="profile"><div class="md-display" id="profileContent">${esc(tabCache.profile||'')}</div></div>`;
+    } else {
+      o+=`<div class="tab-content${activeTab==='journal'?' active':''}" data-tab="journal"><div class="md-display rendered" id="journalContent">${renderMd(tabCache.journal||'')}</div></div>`;
+      o+=`<div class="tab-content${activeTab==='profile'?' active':''}" data-tab="profile"><div class="md-display rendered" id="profileContent">${renderMd(tabCache.profile||'')}</div></div>`;
+    }
+
+    $('hiveView').innerHTML=o;
+  }
+
+  // ── Tabs ──
+  window._tab=function(t){
+    activeTab=t;
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim().toLowerCase()===t));
+    document.querySelectorAll('.tab-content').forEach(p=>p.classList.toggle('active',p.dataset.tab===t));
+    loadTab(t);
+  };
+
+  window._toggleBee=function(card,e){
+    if(e.target.closest('button'))return;
+    card.classList.toggle('expanded');
+  };
+
+  window._mdMode=function(mode){
+    mdMode=mode;
+    renderHiveView();
+    loadTab(activeTab);
+  };
+
+  function applyMdContent(elId,content){
+    const el=$(elId);if(!el)return;
+    if(mdMode==='raw'){el.textContent=content;}
+    else{el.innerHTML=renderMd(content);}
+  }
+
+  async function loadTab(t){
+    if(!sel)return;
+    const name=encodeURIComponent(sel.name);
+    if(t==='brain'&&tabCache.brain==null){
+      const d=await api(`/api/hives/${name}/brain`);
+      tabCache.brain=d.content||'';
+      if(mdMode==='raw'){const el=$('brainEditor');if(el)el.value=tabCache.brain;}
+      else{const el=$('brainRendered');if(el)el.innerHTML=renderMd(tabCache.brain);}
+    } else if(t==='journal'&&tabCache.journal==null){
+      const d=await api(`/api/hives/${name}/journal`);
+      tabCache.journal=d.content||'';
+      applyMdContent('journalContent',tabCache.journal);
+    } else if(t==='profile'&&tabCache.profile==null){
+      const d=await api(`/api/hives/${name}/profile`);
+      tabCache.profile=d.content||'';
+      applyMdContent('profileContent',tabCache.profile);
+    }
+  }
+
+  window.saveBrain=async function(){
+    if(!sel)return;
+    const content=$('brainEditor').value;
+    try{
+      await api(`/api/hives/${encodeURIComponent(sel.name)}/brain`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({content})});
+      tabCache.brain=content;
+      toast('Brain saved','ok');
+    }catch(e){toast('Failed to save brain','err');}
+  };
+
+  // ── Folder Browser ──
+  let browserTarget=null;
+
+  window.toggleBrowser=function(target){
+    const el=$(target+'Browser');
+    if(el.classList.contains('open')){el.classList.remove('open');return;}
+    browserTarget=target;
+    const inputVal=$(target+'Path').value.trim();
+    browseTo(target,inputVal||'~');
+  };
+
+  async function browseTo(target,dirPath){
+    try{
+      const d=await api('/api/browse?path='+encodeURIComponent(dirPath));
+      if(d.error){toast(d.error,'err');return;}
+      browserTarget=target;
+      renderBrowser(target,d);
+      $(target+'Browser').classList.add('open');
+    }catch(e){toast('Cannot browse directory','err');}
+  }
+
+  function renderBrowser(target,data){
+    const el=$(target+'Browser');
+    let h=`<div class="browser-head">`;
+    if(data.path!==data.parent){
+      h+=`<button class="browser-up" data-target="${target}" data-path="${esc(data.parent)}" title="Go up">&larr;</button>`;
+    }
+    h+=`<span class="browser-crumb" title="${esc(data.path)}">${esc(data.path)}</span>`;
+    h+=`</div><div class="browser-dirs">`;
+    if(!data.dirs.length){
+      h+='<div class="browser-none">No subdirectories</div>';
+    } else {
+      for(const d of data.dirs){
+        const full=data.path.replace(/\/$/,'') + '/' + d;
+        h+=`<button class="browser-dir" data-target="${target}" data-path="${esc(full)}">${esc(d)}</button>`;
+      }
+    }
+    h+=`</div><div class="browser-foot"><button class="btn btn-accent btn-sm" data-action="select-browser" data-target="${target}" data-path="${esc(data.path)}">Select this folder</button></div>`;
+    el.innerHTML=h;
+  }
+
+  document.addEventListener('click',function(e){
+    const dir=e.target.closest('.browser-dir');
+    if(dir){browseTo(dir.dataset.target,dir.dataset.path);return;}
+    const up=e.target.closest('.browser-up');
+    if(up){browseTo(up.dataset.target,up.dataset.path);return;}
+    const sel=e.target.closest('[data-action="select-browser"]');
+    if(sel){
+      const t=sel.dataset.target;
+      $(t+'Path').value=sel.dataset.path;
+      $(t+'Browser').classList.remove('open');
+      if(t==='create')validateCreate();
+      else if(t==='adopt')validateAdopt();
+    }
+  });
+
+  // ── Create Hive ──
+  window.openCreateModal=function(prefillPath=''){
+    $('createPath').value=prefillPath;$('createName').value='';
+    $('createOutput').style.display='none';
+    $('createSubmit').disabled=!prefillPath;
+    $('createSubmit').textContent='Create';
+    $('createModal').classList.add('open');
+    setTimeout(()=>$('createPath').focus(),200);
+  };
+  window.closeCreateModal=function(){$('createModal').classList.remove('open');$('createBrowser').classList.remove('open');};
+  window.validateCreate=function(){$('createSubmit').disabled=!$('createPath').value.trim();};
+  window.doCreate=async function(){
+    const path=$('createPath').value.trim();
+    if(!path)return;
+    const name=$('createName').value.trim();
+    $('createSubmit').disabled=true;
+    $('createSubmit').innerHTML='<span class="spinner"></span>';
+    try{
+      const d=await api('/api/hives',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path,name:name||undefined})});
+      $('createOutput').textContent=d.output||'Done';
+      $('createOutput').style.display='block';
+      toast('Hive created','ok');
+      await refreshHives();
+      $('createSubmit').textContent='Done';
+      $('createSubmit').disabled=false;
+      $('createSubmit').onclick=closeCreateModal;
+    }catch(e){
+      toast('Failed to create hive','err');
+      $('createSubmit').textContent='Create';
+      $('createSubmit').disabled=false;
+      $('createSubmit').onclick=doCreate;
+    }
+  };
+
+  // ── Spawn ──
+  window.openSpawnModal=function(){
+    $('spawnBranch').value='';
+    $('spawnOutput').style.display='none';
+    $('spawnSubmit').disabled=false;
+    $('spawnSubmit').textContent='Spawn';
+    const isRepo=sel&&sel.type!=='brain';
+    $('spawnField').style.display=isRepo?'block':'none';
+    $('spawnDesc').textContent=isRepo?'Create a new worker bee. Optionally specify a branch.':'Create a new worker bee in this hive.';
+    $('spawnModal').classList.add('open');
+    if(isRepo)setTimeout(()=>$('spawnBranch').focus(),200);
+  };
+  window.closeSpawnModal=function(){$('spawnModal').classList.remove('open');};
+  window.doSpawn=async function(){
+    if(!sel)return;
+    $('spawnSubmit').disabled=true;
+    $('spawnSubmit').innerHTML='<span class="spinner"></span>';
+    const branch=$('spawnBranch').value.trim();
+    const body=branch?{branch}:{};
+    try{
+      const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/spawn`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      $('spawnOutput').textContent=d.output||'Done';
+      $('spawnOutput').style.display='block';
+      toast('Bee spawned','ok');
+      await refreshHives();
+    }catch(e){toast('Spawn failed','err');}
+    $('spawnSubmit').disabled=false;
+    $('spawnSubmit').textContent='Spawn';
+  };
+
+  // ── Adopt ──
+  window.openAdoptModal=function(){
+    $('adoptPath').value='';
+    $('adoptOutput').style.display='none';
+    $('adoptSubmit').disabled=true;
+    $('adoptSubmit').textContent='Adopt';
+    $('adoptModal').classList.add('open');
+    setTimeout(()=>$('adoptPath').focus(),200);
+  };
+  window.closeAdoptModal=function(){$('adoptModal').classList.remove('open');$('adoptBrowser').classList.remove('open');};
+  window.validateAdopt=function(){$('adoptSubmit').disabled=!$('adoptPath').value.trim();};
+  window.doAdopt=async function(){
+    if(!sel)return;
+    const path=$('adoptPath').value.trim();
+    if(!path)return;
+    $('adoptSubmit').disabled=true;
+    $('adoptSubmit').innerHTML='<span class="spinner"></span>';
+    try{
+      const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/adopt`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path})});
+      $('adoptOutput').textContent=d.output||'Done';
+      $('adoptOutput').style.display='block';
+      toast('Directory adopted','ok');
+      await refreshHives();
+    }catch(e){toast('Adopt failed','err');}
+    $('adoptSubmit').disabled=false;
+    $('adoptSubmit').textContent='Adopt';
+  };
+
+  // ── Destroy ──
+  window.openDestroyModal=function(bee){
+    destroyBee=bee;
+    $('destroyMsg').textContent=`Are you sure you want to destroy "${bee}"? This removes it permanently.`;
+    $('destroySubmit').disabled=false;
+    $('destroySubmit').textContent='Destroy';
+    $('destroyModal').classList.add('open');
+  };
+  window.closeDestroyModal=function(){$('destroyModal').classList.remove('open');destroyBee=null;};
+  window.doDestroy=async function(){
+    if(!sel||!destroyBee)return;
+    $('destroySubmit').disabled=true;
+    $('destroySubmit').innerHTML='<span class="spinner"></span>';
+    try{
+      const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/destroy/${encodeURIComponent(destroyBee)}`,{method:'POST'});
+      toast(d.output||'Bee destroyed','ok');
+      closeDestroyModal();
+      await refreshHives();
+    }catch(e){toast('Destroy failed','err');}
+    $('destroySubmit').disabled=false;
+    $('destroySubmit').textContent='Destroy';
+  };
+
+  // ── Actions ──
+  window.doDoctor=async function(){
+    if(!sel)return;toast('Running doctor...','info');
+    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);toast(d.output||'Doctor complete','ok');}
+    catch(e){toast('Doctor failed','err');}
+  };
+  window.doClean=async function(){
+    if(!sel)return;toast('Cleaning...','info');
+    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/clean`,{method:'POST'});toast(d.output||'Clean complete','ok');await refreshHives();}
+    catch(e){toast('Clean failed','err');}
+  };
+  window.doScan=async function(){
+    toast('Scanning...','info');
+    try{const d=await api('/api/scan',{method:'POST'});toast(d.output||'Scan complete','ok');await Promise.all([refreshHives(),refreshStrays()]);}
+    catch(e){toast('Scan failed','err');}
+  };
+  window.doLaunch=async function(bee){
+    if(!sel)return;toast(`Launching ${bee}...`,'info');
+    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/launch/${encodeURIComponent(bee)}`,{method:'POST'});toast(d.output||`Launched ${bee}`,'ok');}
+    catch(e){toast('Launch failed','err');}
+  };
+  window.doLaunchAll=async function(){
+    if(!sel)return;toast('Launching all bees...','info');
+    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/launch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});toast(d.output||'All bees launched','ok');}
+    catch(e){toast('Launch failed','err');}
+  };
+
+  // ── Mobile ──
+  window.toggleSidebar=function(){$('sidebar').classList.toggle('open');};
+
+  // ── Events ──
+  document.addEventListener('click',function(e){
+    if(window.innerWidth<=768){
+      const sb=$('sidebar');
+      if(sb.classList.contains('open')&&!sb.contains(e.target)&&!e.target.closest('.menu-btn'))sb.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click',function(e){
+    ['createModal','spawnModal','adoptModal','destroyModal'].forEach(id=>{
+      if(e.target===$(id)){
+        if(id==='createModal')closeCreateModal();
+        else if(id==='spawnModal')closeSpawnModal();
+        else if(id==='adoptModal')closeAdoptModal();
+        else closeDestroyModal();
+      }
+    });
+  });
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      closeCreateModal();closeSpawnModal();closeAdoptModal();closeDestroyModal();
+      if(openAcct!==null){$('acctPanel').classList.remove('open');openAcct=null;renderPills();}
+    }
+    if(e.key==='Enter'){
+      if($('createModal').classList.contains('open')&&!$('createSubmit').disabled)doCreate();
+      else if($('adoptModal').classList.contains('open')&&!$('adoptSubmit').disabled)doAdopt();
+      else if($('spawnModal').classList.contains('open'))doSpawn();
+    }
+  });
+
+  // ── Data ──
+  async function refreshHives(){
+    try{
+      const data=await api('/api/hives');
+      const j=JSON.stringify(data);
+      if(j!==JSON.stringify(hives)){
+        hives=data;
+        renderSidebar();
+        if(sel){
+          const u=hives.find(h=>h.name===sel.name);
+          if(u){sel=u;renderHiveView();
+            if(tabCache.brain!=null&&$('brainEditor'))$('brainEditor').value=tabCache.brain;
+            if(tabCache.journal!=null&&$('journalContent'))$('journalContent').textContent=tabCache.journal;
+            if(tabCache.profile!=null&&$('profileContent'))$('profileContent').textContent=tabCache.profile;
+          } else {sel=null;renderHiveView();}
+        }
+      }
+    }catch(e){}
+  }
+
+  async function refreshAccounts(){
+    try{
+      accounts=await api('/api/accounts');
+      renderPills();
+      if(openAcct!==null&&accounts[openAcct])renderAcctDetail(accounts[openAcct],openAcct);
+    }catch(e){}
+  }
+
+  async function refreshStrays(){
+    try{
+      strays=await api('/api/strays');
+      if(selectedStray){
+        selectedStray=strays.find(s=>s.path===selectedStray.path)||null;
+        renderHiveView();
+      }
+      renderSidebar();
+    }catch(e){}
+  }
+
+  async function refreshBeeLife(){
+    if(!sel||!selectedBee)return;
+    try{
+      const data=await api(`/api/hives/${encodeURIComponent(sel.name)}/bees/${encodeURIComponent(selectedBee)}`);
+      if(!data.error){beeLifeData=data;renderHiveView();}
+    }catch(e){}
+  }
+
+  async function init(){
+    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts()]);
+    const hashParts=location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
+    if(hashParts.length){
+      const h=hives.find(x=>x.name===hashParts[0]);
+      if(h){
+        sel=h;renderSidebar();renderHiveView();loadTab('brain');document.title='fleet · '+h.name;
+        if(hashParts[1]){
+          await window._openBee(hashParts[1]);
+          if(hashParts[2])window._beeTab(hashParts[2]);
+        }
+      }
+    }
+    setInterval(refreshHives,10000);
+    setInterval(refreshStrays,30000);
+    setInterval(refreshAccounts,10000);
+    setInterval(refreshBeeLife,15000);
+  }
+  init();
+})();
+</script>

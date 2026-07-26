@@ -1,0 +1,1366 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+VERSION="1.0.0"
+
+# ─── Colors ───
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+DIM='\033[2m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+info()  { printf "${BLUE}%s${NC}\n" "$*"; }
+ok()    { printf "${GREEN}%s${NC}\n" "$*"; }
+warn()  { printf "${YELLOW}%s${NC}\n" "$*"; }
+err()   { printf "${RED}%s${NC}\n" "$*" >&2; }
+dim()   { printf "${DIM}%s${NC}\n" "$*"; }
+bold()  { printf "${BOLD}%s${NC}\n" "$*"; }
+die()   { err "Error: $*"; exit 1; }
+
+confirm() {
+  local prompt="${1:-Proceed?}"
+  printf "${YELLOW}%s (y/n) ${NC}" "$prompt"
+  read -r answer
+  [[ "$answer" =~ ^[Yy]$ ]]
+}
+
+require_jq() {
+  command -v jq &>/dev/null || die "jq is required. Install: brew install jq"
+}
+
+# ─── Fleet detection ───
+find_hive() {
+  local dir="$PWD"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -f "$dir/.fleet/fleet.json" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+  return 1
+}
+
+in_hive() { find_hive &>/dev/null; }
+
+hive_root() { find_hive || die "Not in a fleet hive. Run 'fleet init' first."; }
+
+fleet_type() { jq -r '.type' "$1/.fleet/fleet.json"; }
+
+next_bee_num() { jq -r '.next_bee' "$1/.fleet/fleet.json"; }
+
+bump_next_bee() {
+  local hive="$1" tmp
+  tmp=$(mktemp)
+  jq '.next_bee += 1' "$hive/.fleet/fleet.json" > "$tmp" && mv "$tmp" "$hive/.fleet/fleet.json"
+}
+
+# ─── Symlinks ───
+wire_symlinks() {
+  local hive="$1" bee="$2" type="$3"
+
+  ln -sf ../CLAUDE.md "$bee/CLAUDE.md"
+  ln -sf ../.claude "$bee/.claude"
+  ln -sf ../.fleet "$bee/.fleet"
+
+  if [[ "$type" == "brain" ]]; then
+    [[ -d "$hive/artifacts" ]] && ln -sf ../artifacts "$bee/artifacts"
+    [[ -d "$hive/backups" ]]   && ln -sf ../backups "$bee/backups"
+  fi
+}
+
+gitignore_add() {
+  local dir="$1"
+  local gi="$dir/.gitignore"
+  for entry in CLAUDE.md .fleet .claude; do
+    if [[ -f "$gi" ]]; then
+      grep -qxF "$entry" "$gi" 2>/dev/null || echo "$entry" >> "$gi"
+    else
+      echo "$entry" >> "$gi"
+    fi
+  done
+}
+
+# ─── Settings merge ───
+merge_settings() {
+  local src="$1" dst="$2" tmp
+  command -v jq &>/dev/null || return
+  [[ -f "$src" && -f "$dst" ]] || return 0
+  tmp=$(mktemp)
+  jq -s '
+    (.[0] // {}) as $a | (.[1] // {}) as $b |
+    ($a * $b) |
+    .permissions.allow = ([$a.permissions.allow // [], $b.permissions.allow // []] | add | unique) |
+    .permissions.deny  = ([$a.permissions.deny  // [], $b.permissions.deny  // []] | add | unique)
+  ' "$dst" "$src" > "$tmp" && mv "$tmp" "$dst"
+}
+
+# ─── Claude session linking + trust ───
+_setup_bee_claude() {
+  local hive="$1" bee_name="$2"
+  local bee_path="${hive}/${bee_name}"
+  local hive_proj="$HOME/.claude/projects/$(echo "$hive" | tr '/' '-')"
+  local bee_proj="$HOME/.claude/projects/$(echo "$bee_path" | tr '/' '-')"
+
+  if [[ -d "$hive_proj" && ! -e "$bee_proj" ]]; then
+    ln -s "$hive_proj" "$bee_proj"
+    dim "  Linked Claude sessions for $bee_name"
+  fi
+
+  _trust_path "$bee_path"
+}
+
+_trust_path() {
+  local p="$1"
+  local cj="$HOME/.claude.json"
+  [[ -f "$cj" ]] && command -v jq &>/dev/null || return 0
+  local tmp; tmp=$(mktemp)
+  jq --arg p "$p" '
+    .projects[$p].hasTrustDialogAccepted = true |
+    .projects[$p].hasCompletedProjectOnboarding = true
+  ' "$cj" > "$tmp" && mv "$tmp" "$cj"
+}
+
+_bee_has_sessions() {
+  local dir="$1"
+  local proj="$HOME/.claude/projects/$(echo "$dir" | tr '/' '-')"
+  if [[ -L "$proj" ]]; then
+    proj=$(readlink "$proj")
+  fi
+  [[ -d "$proj" ]] && compgen -G "$proj/*.jsonl" >/dev/null 2>&1
+}
+
+# ─── Brain merge ───
+_merge_brains() {
+  local hive="$1"
+  local has_backups=false
+  for f in "$hive/backups/"*-CLAUDE.md; do
+    [[ -f "$f" ]] && { has_backups=true; break; }
+  done
+  $has_backups || return 0
+
+  command -v claude &>/dev/null || { dim "  Skipped AI merge (claude not found)"; return 0; }
+
+  local count=1
+  for f in "$hive/backups/"*-CLAUDE.md; do [[ -f "$f" ]] && ((count++)); done
+
+  info "Merging $count brain files with AI (this may take 30-60s)..."
+
+  local tmp; tmp=$(mktemp)
+  {
+    cat <<'INST'
+Merge these CLAUDE.md brain files into one combined document.
+- Keep ALL unique content from every source
+- Deduplicate identical or near-identical sections
+- When sections differ, keep the most complete/up-to-date version
+- Preserve markdown structure and formatting
+- Output ONLY the merged markdown, no commentary or wrapping
+INST
+    echo ""
+    echo "=== Source: main ==="
+    cat "$hive/CLAUDE.md"
+    echo ""
+    for f in "$hive/backups/"*-CLAUDE.md; do
+      [[ -f "$f" ]] || continue
+      local label; label=$(basename "$f" -CLAUDE.md)
+      echo "=== Source: ${label} ==="
+      cat "$f"
+      echo ""
+    done
+  } > "$tmp"
+
+  if cat "$tmp" | timeout 120 claude -p > "$hive/CLAUDE.md.merged" 2>/dev/null; then
+    cp "$hive/CLAUDE.md" "$hive/backups/pre-merge-CLAUDE.md"
+    mv "$hive/CLAUDE.md.merged" "$hive/CLAUDE.md"
+    ok "  Merged $count brain files into CLAUDE.md"
+  else
+    rm -f "$hive/CLAUDE.md.merged"
+    warn "  AI merge timed out — kept original CLAUDE.md (backups preserved)"
+  fi
+  rm -f "$tmp"
+}
+
+# ─── Coordination protocol ───
+inject_protocol() {
+  local md="$1"
+  grep -q "## Session Coordination" "$md" 2>/dev/null && return
+  cat >> "$md" <<'PROTO'
+
+## Session Coordination (fleet-managed)
+
+This project uses fleet for multi-session coordination. Multiple Claude Code sessions run in parallel — each in its own `bee*/` directory, all sharing this brain file.
+
+**You MUST read and follow `.fleet/RULES.md` at the start of every session.** It contains strict operational rules for task claiming, status updates, and coordination. Violations cause dashboard desync and coordination conflicts.
+
+### Quick reference
+- `.fleet/RULES.md` — **mandatory rules** (read first, every session)
+- `.fleet/active/` — who's doing what right now
+- `.fleet/journal.md` — work history
+- `.fleet/profile.md` — project intelligence
+- `CLAUDE.md` — this file, the shared brain
+- `.claude/settings.local.json` — shared permissions
+PROTO
+}
+
+inject_rules() {
+  local fleet_dir="$1"
+  if [[ -f "$fleet_dir/RULES.md" ]]; then
+    if ! grep -q "## Permanent bee history" "$fleet_dir/RULES.md"; then
+      cat >> "$fleet_dir/RULES.md" <<'HISTORY'
+
+## Permanent bee history
+
+Keep the bee's durable timeline current in addition to the active claim and shared journal:
+- Important progress: `fleet event milestone "<what changed>"`
+- Decision made: `fleet event decision "<decision and why>"`
+- Useful discovery: `fleet event discovery "<what you learned>"`
+- Blocked: `fleet event blocker "<blocker>"`
+- Tests run: `fleet event test "<command and outcome>"`
+- Task finished: `fleet event complete "<result>"`
+
+Do not log every prompt or file read. Record meaningful changes of state that another person would want in the bee's history.
+HISTORY
+    fi
+    return
+  fi
+  cat > "$fleet_dir/RULES.md" <<'RULES'
+# Fleet Rules (mandatory)
+
+Every bee session MUST follow these rules. No exceptions.
+
+## 1. Claim before working
+
+Before doing ANY work, write your task to `.fleet/active/<your-bee-name>.md`:
+
+```
+Working on: <one-line description of what you're doing>
+```
+
+Your bee name is the directory you're in (e.g. `bee1`, `bee2`). If you don't know it, check `basename "$PWD"`.
+
+**Why:** The dashboard uses this file to show what each bee is doing. Without it, you show as "idle" even while actively working, and other bees may start conflicting work.
+
+## 2. Check before you start
+
+Read `.fleet/active/` to see what other bees are doing:
+- If another bee is working on the same area, coordinate or pick different work
+- Never modify files another bee has claimed
+
+## 3. Update when you switch tasks
+
+If the user gives you a new task or you pivot to different work, update your active file immediately. Don't wait until the old task is "done" — update as soon as your focus changes.
+
+## 4. Journal significant completions
+
+When you finish something meaningful:
+1. Append a dated entry to `.fleet/journal.md`:
+   ```
+   ## YYYY-MM-DD — <bee-name>
+   - <what was done, 1-3 bullets>
+   ```
+2. Update `CLAUDE.md` if you discovered something other bees should know
+3. Remove `.fleet/active/<bee>.md` ONLY if you're truly done and idle
+
+## 5. Update the brain
+
+When you discover something important (a gotcha, a pattern, a decision), add it to `CLAUDE.md`. This is the shared knowledge base — other bees read it on startup.
+
+## 6. Don't touch what isn't yours
+
+- Never edit another bee's active file
+- Never modify files in another bee's directory
+- If you need something from another bee's work, read it — don't write to it
+
+## 7. Clean exit
+
+When the user ends your session or you finish all work:
+1. Remove `.fleet/active/<bee>.md`
+2. Write a journal entry if you did anything significant
+3. Update `CLAUDE.md` with any new knowledge
+
+## Permanent bee history
+
+Keep the bee's durable timeline current in addition to the active claim and shared journal:
+- Important progress: `fleet event milestone "<what changed>"`
+- Decision made: `fleet event decision "<decision and why>"`
+- Useful discovery: `fleet event discovery "<what you learned>"`
+- Blocked: `fleet event blocker "<blocker>"`
+- Tests run: `fleet event test "<command and outcome>"`
+- Task finished: `fleet event complete "<result>"`
+
+Do not log every prompt or file read. Record meaningful changes of state that another person would want in the bee's history.
+RULES
+}
+
+# ─── Permanent bee event log ───
+_append_bee_event() {
+  local hive="$1" bee="$2" type="$3" message="$4" meta="${5:-{}}"
+  local dir="$hive/.fleet/bees/$bee"
+  mkdir -p "$dir"
+  jq -nc \
+    --arg id "$(command -v uuidgen &>/dev/null && uuidgen || echo "$(date +%s)-$RANDOM-$RANDOM")" \
+    --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg type "$type" \
+    --arg message "$message" \
+    --argjson meta "$meta" \
+    '{id:$id, at:$at, type:$type, message:$message, meta:$meta}' >> "$dir/events.jsonl"
+}
+
+# ─── Register bee in fleet.json ───
+register_bee() {
+  local hive="$1" name="$2" origin="$3" branch="${4:-}" source="${5:-}" tmp
+  tmp=$(mktemp)
+  jq --arg n "$name" --arg o "$origin" --arg b "$branch" --arg s "$source" \
+    '.bees[$n] = {created: (now | strftime("%Y-%m-%d")), origin: $o, branch: $b, source: $s}' \
+    "$hive/.fleet/fleet.json" > "$tmp" && mv "$tmp" "$hive/.fleet/fleet.json"
+  _append_bee_event "$hive" "$name" "bee_created" "Bee created via $origin"
+}
+
+# ════════════════════════════════════════════════════════
+#  INIT
+# ════════════════════════════════════════════════════════
+cmd_init() {
+  local name="" no_ai=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --name)  name="$2"; shift 2 ;;
+      --no-ai) no_ai=true; shift ;;
+      -h|--help) echo "Usage: fleet init [--name NAME] [--no-ai]"; return ;;
+      *) shift ;;
+    esac
+  done
+
+  [[ -f ".fleet/fleet.json" ]] && die "Already a fleet hive. Use 'fleet spawn' to add bees."
+
+  local target_dir="$PWD"
+  local parent_dir dir_name type git_remote="" git_branch=""
+  parent_dir=$(dirname "$target_dir")
+  dir_name=$(basename "$target_dir")
+
+  if [[ -d ".git" ]]; then
+    type="repo"
+    git_remote=$(git remote get-url origin 2>/dev/null || true)
+    git_branch=$(git branch --show-current 2>/dev/null || true)
+  else
+    type="brain"
+  fi
+
+  [[ -z "$name" ]] && name="$dir_name"
+
+  # ── Scan ──
+  echo ""
+  info "Scanning project..."
+  echo "  Type:      $([ "$type" = "repo" ] && echo "git repo${git_remote:+ ($git_remote)}" || echo "knowledge-base (no git)")"
+  [[ -n "$git_branch" ]] && echo "  Branch:    $git_branch"
+  echo "  CLAUDE.md: $([ -f CLAUDE.md ] && echo "found ($(wc -c < CLAUDE.md | tr -d ' ') bytes)" || echo "none (will create)")"
+
+  # Find siblings
+  local siblings=()
+  for i in 2 3 4 5 6 7 8 9; do
+    local c="$parent_dir/${dir_name}${i}"
+    [[ -d "$c" ]] && siblings+=("$c")
+  done
+  # Also check name-N pattern
+  for c in "$parent_dir/${dir_name}-"[0-9]*; do
+    [[ -d "$c" ]] && siblings+=("$c")
+  done
+
+  if [[ ${#siblings[@]} -gt 0 ]]; then
+    echo "  Nearby:    ${#siblings[@]} sibling(s)"
+    for s in "${siblings[@]}"; do
+      local sinfo="$(basename "$s")/"
+      [[ -f "$s/CLAUDE.md" ]] && sinfo+=" (CLAUDE.md: $(wc -c < "$s/CLAUDE.md" | tr -d ' ') bytes)"
+      echo "             $sinfo"
+    done
+  fi
+
+  echo ""
+  bold "Plan:"
+  if [[ "$type" == "repo" ]]; then
+    echo "  1. Wrap ${dir_name}/ as hive"
+    echo "  2. Move current repo into bee1/ (branch: ${git_branch:-detached})"
+  else
+    echo "  1. Set up ${name}/ as hive"
+    echo "  2. Create bee1/ (session dir)"
+  fi
+
+  local n=2
+  for s in "${siblings[@]}"; do
+    echo "  $((n+1)). Adopt $(basename "$s")/ as bee${n}/"
+    ((n++)) || true
+  done
+  echo ""
+
+  confirm "Proceed?" || { info "Aborted."; return 0; }
+  echo ""
+
+  # ── Restructure ──
+  if [[ "$type" == "repo" ]]; then
+    info "Restructuring..."
+
+    local had_md=false had_claude=false
+    [[ -f "CLAUDE.md" ]] && had_md=true
+    [[ -d ".claude" ]]   && had_claude=true
+
+    cd "$parent_dir"
+    mv "$dir_name" ".${dir_name}.fleet-tmp"
+    mkdir "$dir_name"
+    mv ".${dir_name}.fleet-tmp" "${dir_name}/bee1"
+    cd "$dir_name"
+
+    if $had_md; then mv bee1/CLAUDE.md CLAUDE.md; else touch CLAUDE.md; fi
+    if $had_claude; then mv bee1/.claude .claude; else mkdir -p .claude; fi
+
+    ln -sf ../CLAUDE.md bee1/CLAUDE.md
+    ln -sf ../.claude bee1/.claude
+    gitignore_add bee1
+    _setup_bee_claude "$PWD" bee1
+
+    ok "  Moved repo to bee1/ (git remotes intact)"
+  else
+    [[ ! -f "CLAUDE.md" ]] && touch CLAUDE.md
+    [[ ! -d ".claude" ]]   && mkdir -p .claude
+
+    mkdir -p artifacts backups
+
+    local ma=0 mb=0
+    for f in *.pdf *.PDF; do [[ -f "$f" ]] && mv "$f" artifacts/ && { ((ma++)) || true; }; done
+    for f in *backup* *routing*; do [[ -f "$f" ]] && mv "$f" backups/ && { ((mb++)) || true; }; done
+    [[ $ma -gt 0 ]] && ok "  Moved $ma file(s) to artifacts/" || true
+    [[ $mb -gt 0 ]] && ok "  Moved $mb file(s) to backups/" || true
+
+    mkdir -p bee1
+    wire_symlinks "$PWD" bee1 brain
+    _setup_bee_claude "$PWD" bee1
+    ok "  Created bee1/ with symlinks"
+  fi
+
+  # ── Fleet config ──
+  mkdir -p .fleet/active .fleet/bees/bee1
+
+  local next=2
+  cat > .fleet/fleet.json <<EOF
+{
+  "name": "$name",
+  "type": "$type",
+  "created": "$(date +%Y-%m-%d)",
+  "git_remote": "$git_remote",
+  "next_bee": $next,
+  "bees": {
+    "bee1": {
+      "created": "$(date +%Y-%m-%d)",
+      "origin": "init",
+      "branch": "$git_branch",
+      "source": ""
+    }
+  }
+}
+EOF
+  _append_bee_event "$PWD" "bee1" "bee_created" "Bee created via init"
+
+  cat > .fleet/journal.md <<'EOF'
+# Fleet Journal
+
+Work log — each bee appends here when completing significant work.
+
+---
+EOF
+
+  ln -sf ../.fleet bee1/.fleet
+
+  # ── AI profile ──
+  if ! $no_ai && command -v claude &>/dev/null; then
+    info "Generating project profile (this may take 30-60s)..."
+    local prompt="Analyze this project directory. Describe in 2-3 short paragraphs: what it is, main work streams, tech stack, parallel work opportunities. Be concise. Files: $(ls -1 | head -20)"
+    if timeout 90 claude --print "$prompt" > .fleet/profile.md 2>/dev/null; then
+      ok "  Saved .fleet/profile.md"
+    else
+      echo -e "# Project Profile\n\nRun 'fleet refresh' to generate." > .fleet/profile.md
+      warn "  Profile timed out or failed (run 'fleet refresh' later)"
+    fi
+  else
+    echo -e "# Project Profile\n\nRun 'fleet refresh' to generate." > .fleet/profile.md
+    dim "  Skipped profile ($(! $no_ai && echo "claude not found" || echo "--no-ai"))"
+  fi
+
+  # ── Auto-adopt siblings ──
+  for s in "${siblings[@]}"; do
+    _adopt_impl "$s"
+  done
+
+  # ── Merge brains from siblings ──
+  if ! $no_ai; then
+    _merge_brains "$PWD"
+  fi
+
+  # ── Register globally ──
+  register_hive "$PWD" "$name"
+
+  # ── Inject coordination ──
+  inject_protocol CLAUDE.md
+  inject_rules .fleet
+
+  echo ""
+  ok "Fleet \"$name\" ready"
+  for b in bee*; do
+    [[ -d "$b" ]] || continue
+    local bi=""
+    [[ -d "$b/.git" ]] && bi=" (branch: $(cd "$b" && git branch --show-current 2>/dev/null || echo "?"))"
+    echo "  $b/$bi"
+  done
+  echo ""
+  info "Run: cd bee1 && claude"
+  [[ "$type" == "repo" ]] && warn "Tip: run 'cd \$(pwd)' to refresh your shell" || true
+}
+
+# ════════════════════════════════════════════════════════
+#  ADOPT (internal + public)
+# ════════════════════════════════════════════════════════
+_adopt_impl() {
+  local src="$1"
+  local hive="$PWD"
+  local type
+  type=$(fleet_type "$hive")
+  local num
+  num=$(next_bee_num "$hive")
+  local bee="bee${num}"
+  local src_name
+  src_name=$(basename "$src")
+
+  # Backup sibling's CLAUDE.md before it's removed
+  if [[ -f "$src/CLAUDE.md" ]]; then
+    mkdir -p "$hive/backups"
+    cp "$src/CLAUDE.md" "$hive/backups/${src_name}-CLAUDE.md"
+    dim "  Backed up CLAUDE.md from $src_name"
+  fi
+
+  # Merge settings
+  if [[ -f "$src/.claude/settings.local.json" ]]; then
+    merge_settings "$src/.claude/settings.local.json" "$hive/.claude/settings.local.json"
+  fi
+
+  # Move artifacts for brain hives
+  if [[ "$type" == "brain" ]]; then
+    for f in "$src"/*.pdf "$src"/*.PDF; do
+      [[ -f "$f" ]] && mv "$f" "$hive/artifacts/" || true
+    done
+    for f in "$src"/*backup* "$src"/*routing*; do
+      [[ -f "$f" ]] && mv "$f" "$hive/backups/" || true
+    done
+  fi
+
+  # Strip brain files from source
+  rm -f "$src/CLAUDE.md"
+  rm -rf "$src/.claude" "$src/.fleet"
+
+  # Move into hive
+  mv "$src" "$hive/$bee"
+
+  # Wire symlinks
+  wire_symlinks "$hive" "$hive/$bee" "$type"
+  [[ "$type" == "repo" ]] && gitignore_add "$hive/$bee"
+
+  # Register
+  local branch=""
+  [[ -d "$hive/$bee/.git" ]] && branch=$(cd "$hive/$bee" && git branch --show-current 2>/dev/null || true)
+  _setup_bee_claude "$hive" "$bee"
+  register_bee "$hive" "$bee" "adopt" "$branch" "$src_name"
+  bump_next_bee "$hive"
+
+  ok "  Adopted $src_name/ as $bee/"
+}
+
+cmd_adopt() {
+  [[ $# -lt 1 ]] && die "Usage: fleet adopt <path>"
+
+  local src="$1"
+  [[ "$src" != /* ]] && src="$PWD/$src"
+  src=$(cd "$src" 2>/dev/null && pwd) || die "Path not found: $1"
+  [[ -d "$src" ]] || die "Not a directory: $src"
+
+  local hive
+  hive=$(hive_root)
+  local type
+  type=$(fleet_type "$hive")
+  local num
+  num=$(next_bee_num "$hive")
+  local bee="bee${num}"
+  local src_name
+  src_name=$(basename "$src")
+
+  echo ""
+  info "Scanning $src_name ..."
+  [[ -d "$src/.git" ]] && echo "  Git: $(cd "$src" && git remote get-url origin 2>/dev/null || echo "local") (branch: $(cd "$src" && git branch --show-current 2>/dev/null || echo "?"))"
+  [[ -f "$src/CLAUDE.md" ]] && echo "  CLAUDE.md: $(wc -c < "$src/CLAUDE.md" | tr -d ' ') bytes"
+  [[ -f "$src/.claude/settings.local.json" ]] && echo "  .claude: settings found (will merge)"
+
+  echo ""
+  bold "Plan:"
+  echo "  1. Move $src_name/ into hive as $bee/"
+  echo "  2. Merge brain files + settings"
+  echo "  3. Wire symlinks"
+  echo "  4. Remove old $src"
+  echo ""
+
+  confirm "Proceed?" || { info "Aborted."; return 0; }
+  echo ""
+
+  cd "$hive"
+  _adopt_impl "$src"
+  _merge_brains "$hive"
+  echo ""
+  ok "Done"
+}
+
+# ════════════════════════════════════════════════════════
+#  SPAWN
+# ════════════════════════════════════════════════════════
+cmd_spawn() {
+  local hive type count=1 branch=""
+  hive=$(hive_root)
+  type=$(fleet_type "$hive")
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -n) count="$2"; shift 2 ;;
+      --branch) branch="$2"; shift 2 ;;
+      -h|--help) echo "Usage: fleet spawn [-n COUNT] [--branch BRANCH]"; return ;;
+      *) shift ;;
+    esac
+  done
+
+  cd "$hive"
+
+  for ((i=0; i<count; i++)); do
+    local num bee
+    num=$(next_bee_num "$hive")
+    bee="bee${num}"
+
+    if [[ "$type" == "repo" ]]; then
+      local remote
+      remote=$(jq -r '.git_remote // empty' .fleet/fleet.json)
+      if [[ -n "$remote" ]]; then
+        if [[ -n "$branch" ]]; then
+          git clone --branch "$branch" "$remote" "$bee" 2>/dev/null || git clone "$remote" "$bee" 2>/dev/null
+          (cd "$bee" && git checkout -B "$branch" 2>/dev/null || true)
+        else
+          git clone "$remote" "$bee" 2>/dev/null
+        fi
+      else
+        git clone bee1 "$bee" 2>/dev/null
+        [[ -n "$branch" ]] && (cd "$bee" && git checkout -b "$branch" 2>/dev/null)
+      fi
+      rm -f "$bee/CLAUDE.md"; rm -rf "$bee/.claude" "$bee/.fleet"
+      wire_symlinks "$hive" "$bee" repo
+      gitignore_add "$bee"
+      local bd="${branch:-$(cd "$bee" && git branch --show-current 2>/dev/null || echo "default")}"
+      ok "Created $bee/ (git clone, branch: $bd)"
+    else
+      mkdir -p "$bee"
+      wire_symlinks "$hive" "$bee" brain
+      ok "Created $bee/ (symlinks)"
+    fi
+
+    _setup_bee_claude "$hive" "$bee"
+    register_bee "$hive" "$bee" "spawn" "$branch"
+    bump_next_bee "$hive"
+  done
+}
+
+# ════════════════════════════════════════════════════════
+#  STATUS
+# ════════════════════════════════════════════════════════
+cmd_status() {
+  local hive type name
+  hive=$(hive_root)
+  type=$(fleet_type "$hive")
+  name=$(jq -r '.name' "$hive/.fleet/fleet.json")
+
+  cd "$hive"
+  echo ""
+  bold "Hive: $name  ($type hive)"
+  echo ""
+
+  local count=0
+  for b in bee*; do
+    [[ -d "$b" ]] || continue
+    { ((count++)) || true; }
+
+    local task="idle" state="stopped"
+    if [[ -f ".fleet/active/${b}.md" ]]; then
+      state="active"
+      task=$(head -1 ".fleet/active/${b}.md" 2>/dev/null || echo "working")
+    fi
+
+    local bi=""
+    [[ "$type" == "repo" && -d "$b/.git" ]] && bi="  branch: $(cd "$b" && git branch --show-current 2>/dev/null || echo "?")"
+
+    if [[ "$state" == "active" ]]; then
+      printf "  ${GREEN}%-8s${NC} ./%s/  ${YELLOW}%s${NC}%s\n" "$b" "$b" "$task" "$bi"
+    else
+      printf "  ${DIM}%-8s${NC} ./%s/  ${DIM}%s${NC}%s\n" "$b" "$b" "$task" "$bi"
+    fi
+  done
+
+  echo ""
+  dim "  $count bee(s) total"
+  echo ""
+}
+
+# ════════════════════════════════════════════════════════
+#  LAUNCH
+# ════════════════════════════════════════════════════════
+# ════════════════════════════════════════════════════════
+#  DESTROY
+# ════════════════════════════════════════════════════════
+cmd_destroy() {
+  [[ $# -lt 1 ]] && die "Usage: fleet destroy <bee>"
+
+  local hive bee="$1"
+  hive=$(hive_root)
+  [[ -d "$hive/$bee" ]] || die "Bee not found: $bee"
+
+  if [[ -f "$hive/.fleet/active/${bee}.md" ]]; then
+    warn "Warning: $bee has an active registration"
+  fi
+  if [[ -d "$hive/$bee/.git" ]]; then
+    local ch
+    ch=$(cd "$hive/$bee" && git status --porcelain 2>/dev/null | wc -l | tr -d ' ')
+    [[ "$ch" -gt 0 ]] && warn "Warning: $bee has $ch uncommitted change(s)"
+  fi
+
+  confirm "Destroy $bee? This cannot be undone." || return 0
+
+  rm -rf "$hive/$bee"
+  rm -f "$hive/.fleet/active/${bee}.md"
+  local tmp; tmp=$(mktemp)
+  jq --arg n "$bee" 'del(.bees[$n])' "$hive/.fleet/fleet.json" > "$tmp" && mv "$tmp" "$hive/.fleet/fleet.json"
+  ok "Destroyed $bee"
+}
+
+# ════════════════════════════════════════════════════════
+#  DOCTOR
+# ════════════════════════════════════════════════════════
+cmd_doctor() {
+  local hive issues=0
+  hive=$(hive_root)
+  cd "$hive"
+
+  echo ""
+  bold "Fleet health check"
+  echo ""
+
+  for b in bee*; do
+    [[ -d "$b" ]] || continue
+    for link in CLAUDE.md .claude .fleet; do
+      if [[ -L "$b/$link" && ! -e "$b/$link" ]]; then
+        err "  $b/$link: broken symlink"; { ((issues++)) || true; }
+      elif [[ ! -L "$b/$link" && -e "$b/$link" && "$link" != ".gitignore" ]]; then
+        warn "  $b/$link: real file (should be symlink)"; { ((issues++)) || true; }
+      fi
+    done
+  done
+
+  for af in .fleet/active/*.md; do
+    [[ -f "$af" ]] || continue
+    local bn; bn=$(basename "$af" .md)
+    [[ ! -d "$bn" ]] && { warn "  active/$bn.md: orphaned (no bee dir)"; { ((issues++)) || true; }; }
+  done
+
+  jq . .fleet/fleet.json &>/dev/null || { err "  .fleet/fleet.json: invalid JSON"; { ((issues++)) || true; }; }
+  [[ ! -f CLAUDE.md ]] && { err "  CLAUDE.md: missing"; { ((issues++)) || true; }; }
+
+  # Ensure rules file exists
+  if [[ ! -f .fleet/RULES.md ]]; then
+    inject_rules .fleet
+    ok "  Created .fleet/RULES.md"
+  else
+    local had_event_rules=false
+    grep -q "## Permanent bee history" .fleet/RULES.md && had_event_rules=true
+    inject_rules .fleet
+    if ! $had_event_rules; then
+      ok "  Updated .fleet/RULES.md with permanent bee history"
+    fi
+  fi
+
+  # Ensure coordination protocol is in brain
+  inject_protocol CLAUDE.md
+
+  # Check Claude session links + trust
+  local fixed=0
+  for b in bee*; do
+    [[ -d "$b" ]] || continue
+    local bee_path="$hive/$b"
+    local hive_proj="$HOME/.claude/projects/$(echo "$hive" | tr '/' '-')"
+    local bee_proj="$HOME/.claude/projects/$(echo "$bee_path" | tr '/' '-')"
+
+    if [[ -d "$hive_proj" && ! -e "$bee_proj" ]]; then
+      ln -s "$hive_proj" "$bee_proj"
+      ok "  Fixed: linked Claude sessions for $b"; { ((fixed++)) || true; }
+    fi
+
+    local cj="$HOME/.claude.json"
+    if [[ -f "$cj" ]] && command -v jq &>/dev/null; then
+      local trusted
+      trusted=$(jq -r --arg p "$bee_path" '.projects[$p].hasTrustDialogAccepted // false' "$cj" 2>/dev/null)
+      if [[ "$trusted" != "true" ]]; then
+        _trust_path "$bee_path"
+        ok "  Fixed: trusted $b"; { ((fixed++)) || true; }
+      fi
+    fi
+  done
+  [[ $fixed -gt 0 ]] && ok "  Fixed $fixed Claude config issue(s)"
+
+  echo ""
+  [[ $issues -eq 0 ]] && ok "All healthy" || warn "$issues issue(s) found"
+}
+
+# ════════════════════════════════════════════════════════
+#  EJECT
+# ════════════════════════════════════════════════════════
+cmd_eject() {
+  [[ $# -lt 1 ]] && die "Usage: fleet eject <bee>"
+
+  local hive bee="$1"
+  hive=$(hive_root)
+  [[ -d "$hive/$bee" ]] || die "Bee not found: $bee"
+
+  local parent target
+  parent=$(dirname "$hive")
+  target="$parent/$bee"
+  [[ -d "$target" ]] && die "Directory already exists: $target"
+
+  confirm "Eject $bee to $target/?" || return 0
+
+  for link in CLAUDE.md .claude .fleet artifacts backups; do
+    if [[ -L "$hive/$bee/$link" ]]; then
+      local real
+      real=$(readlink "$hive/$bee/$link")
+      rm "$hive/$bee/$link"
+      local src_path="$hive/$bee/$real"
+      [[ -e "$src_path" ]] && cp -R "$src_path" "$hive/$bee/$link"
+    fi
+  done
+
+  mv "$hive/$bee" "$target"
+  local tmp; tmp=$(mktemp)
+  jq --arg n "$bee" 'del(.bees[$n])' "$hive/.fleet/fleet.json" > "$tmp" && mv "$tmp" "$hive/.fleet/fleet.json"
+  ok "Ejected $bee to $target/"
+}
+
+# ════════════════════════════════════════════════════════
+#  LAUNCH
+# ════════════════════════════════════════════════════════
+cmd_launch() {
+  local hive bee="" all=false
+  hive=$(hive_root)
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --all|-a) all=true; shift ;;
+      -h|--help) echo "Usage: fleet launch [bee] [--all]"; return ;;
+      *) bee="$1"; shift ;;
+    esac
+  done
+
+  cd "$hive"
+
+  if $all; then
+    for b in bee*; do
+      [[ -d "$b" ]] || continue
+      _open_bee_tab "$hive" "$b"
+    done
+    return
+  fi
+
+  [[ -z "$bee" ]] && bee="bee1"
+  [[ -d "$bee" ]] || die "Bee not found: $bee"
+  _open_bee_tab "$hive" "$bee"
+}
+
+_open_bee_tab() {
+  local hive="$1" bee="$2"
+  local dir="${hive}/${bee}"
+  local claude_cmd="claude"
+
+  if _bee_has_sessions "$dir"; then
+    claude_cmd="claude --continue"
+  fi
+
+  local full_cmd="cd '${dir}' && ${claude_cmd}"
+  local term="${TERM_PROGRAM:-}"
+
+  case "$term" in
+    iTerm.app)
+      osascript <<APPLE
+tell application "iTerm2"
+  tell current window
+    create tab with default profile
+    tell current session
+      write text "${full_cmd}"
+    end tell
+  end tell
+end tell
+APPLE
+      ;;
+    Apple_Terminal)
+      osascript <<APPLE
+tell application "Terminal"
+  activate
+  do script "${full_cmd}"
+end tell
+APPLE
+      ;;
+    ghostty|*)
+      printf '%s' "$full_cmd" | pbcopy
+      osascript \
+        -e 'tell application "System Events" to keystroke "t" using command down' \
+        -e 'delay 0.5' \
+        -e 'tell application "System Events" to keystroke "v" using command down' \
+        -e 'delay 0.1' \
+        -e 'tell application "System Events" to keystroke return'
+      ;;
+  esac
+
+  ok "Launched ${bee} (${claude_cmd})"
+}
+
+# ════════════════════════════════════════════════════════
+#  REFRESH
+# ════════════════════════════════════════════════════════
+cmd_refresh() {
+  local hive
+  hive=$(hive_root)
+  command -v claude &>/dev/null || die "Claude CLI not found"
+
+  cd "$hive"
+  info "Regenerating project profile (this may take 30-60s)..."
+  local ctx="Project: $(jq -r '.name' .fleet/fleet.json). Type: $(jq -r '.type' .fleet/fleet.json). Bees: $(ls -d bee* 2>/dev/null | wc -l | tr -d ' '). Files: $(ls -1 | head -15 | tr '\n' ', ')"
+  if timeout 90 claude --print "Analyze this project. 2-3 paragraphs: what it is, work streams, stack, parallel opportunities. Context: $ctx" > .fleet/profile.md 2>/dev/null; then
+    ok "Updated .fleet/profile.md"
+  else
+    err "Profile generation failed or timed out"
+  fi
+}
+
+# ════════════════════════════════════════════════════════
+#  CLEAN
+# ════════════════════════════════════════════════════════
+cmd_clean() {
+  local hive cleaned=0
+  hive=$(hive_root)
+
+  for af in "$hive/.fleet/active"/*.md; do
+    [[ -f "$af" ]] || continue
+    local bn; bn=$(basename "$af" .md)
+    if [[ ! -d "$hive/$bn" ]]; then
+      rm "$af"; ok "Removed orphaned: $bn.md"; { ((cleaned++)) || true; }
+    fi
+  done
+
+  [[ $cleaned -eq 0 ]] && info "Nothing to clean" || ok "Cleaned $cleaned registration(s)"
+}
+
+# ════════════════════════════════════════════════════════
+#  JOURNAL / BRAIN
+# ════════════════════════════════════════════════════════
+cmd_journal() { local h; h=$(hive_root); ${EDITOR:-less} "$h/.fleet/journal.md"; }
+cmd_brain()   { local h; h=$(hive_root); ${EDITOR:-vim} "$h/CLAUDE.md"; }
+
+cmd_event() {
+  [[ $# -lt 2 ]] && die "Usage: fleet event <milestone|decision|discovery|blocker|test|complete|note> <message>"
+  local type="$1"; shift
+  local message="$*"
+  local hive bee mapped
+  hive=$(hive_root)
+  bee=$(basename "$PWD")
+  [[ "$bee" =~ ^bee[0-9]+$ && -d "$hive/$bee" ]] || die "Run 'fleet event' from inside a bee directory"
+  case "$type" in
+    milestone|decision|discovery|blocker|test|note) mapped="$type" ;;
+    complete|completed) mapped="task_completed" ;;
+    *) die "Unknown event type: $type" ;;
+  esac
+  _append_bee_event "$hive" "$bee" "$mapped" "$message"
+  ok "Recorded $mapped for $bee"
+}
+
+# ════════════════════════════════════════════════════════
+#  INTERACTIVE / HELP
+# ════════════════════════════════════════════════════════
+show_help() {
+  cat <<'HELP'
+
+  fleet — Multi-session Claude Code manager
+
+  Usage: fleet <command> [options]
+
+  Core:
+    init [--name X] [--no-ai]     Wrap current dir as hive + bee1
+    spawn [-n N] [--branch B]     Create new bee(s)
+    adopt <path>                  Import external dir as next bee
+
+  Manage:
+    status                        Show all bees and state
+    launch [bee] [--all]          Open terminal tab with claude
+    destroy <bee>                 Remove a bee
+
+  Smart:
+    doctor                        Health check (symlinks, drift)
+    eject <bee>                   Move bee back to standalone dir
+    refresh                       Re-generate AI profile
+    clean                         Remove stale registrations
+    journal                       View work log
+    brain                         Edit CLAUDE.md
+    event <type> <message>        Add to this bee's permanent timeline
+
+  Global:
+    serve [--port N]              Start web dashboard (default: 3847)
+    hives                         List all registered hives
+    register [path]               Register a hive globally
+    unregister <name>             Remove a hive from registry
+    scan                          Scan for hives and standalone stray bees
+    config <key> [value]          Manage global config
+      scan-path <path>              Add a scan path
+      account <name> <dir> [cmd]    Add a Claude account
+      port <N>                      Set dashboard port
+      show                          Show current config
+
+  Options:
+    --version, -v                 Show version
+    --help, -h                    Show this help
+
+HELP
+}
+
+cmd_interactive() {
+  if ! in_hive; then
+    show_help
+    return
+  fi
+
+  local hive name
+  hive=$(hive_root)
+  name=$(jq -r '.name' "$hive/.fleet/fleet.json" 2>/dev/null || echo "fleet")
+
+  cmd_status
+
+  echo "  Commands:"
+  echo "    1) spawn      5) destroy"
+  echo "    2) status     6) doctor"
+  echo "    3) launch     7) clean"
+  echo "    4) adopt      8) journal"
+  echo "    0) exit"
+  echo ""
+  printf "  Choice: "
+  read -r c
+
+  case "$c" in
+    1) cmd_spawn ;;
+    2) cmd_status ;;
+    3) printf "  Bee: "; read -r b; cmd_launch "$b" ;;
+    4) printf "  Path: "; read -r p; cmd_adopt "$p" ;;
+    5) printf "  Bee: "; read -r b; cmd_destroy "$b" ;;
+    6) cmd_doctor ;;
+    7) cmd_clean ;;
+    8) cmd_journal ;;
+    0) ;;
+    *) die "Invalid choice" ;;
+  esac
+}
+
+# ════════════════════════════════════════════════════════
+#  GLOBAL CONFIG (~/.fleet/)
+# ════════════════════════════════════════════════════════
+FLEET_GLOBAL="$HOME/.fleet"
+FLEET_GLOBAL_CONFIG="$FLEET_GLOBAL/config.json"
+_fleet_resolve_self() {
+  local src="$1"
+  while [[ -L "$src" ]]; do
+    local dir; dir=$(cd -P "$(dirname "$src")" && pwd)
+    src=$(readlink "$src")
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  cd -P "$(dirname "$src")/.." && pwd
+}
+FLEET_SCRIPT_DIR="$(_fleet_resolve_self "$0")"
+
+ensure_global() {
+  if [[ ! -d "$FLEET_GLOBAL" ]]; then
+    mkdir -p "$FLEET_GLOBAL"
+  fi
+  if [[ ! -f "$FLEET_GLOBAL_CONFIG" ]]; then
+    cat > "$FLEET_GLOBAL_CONFIG" <<'GCFG'
+{
+  "accounts": [],
+  "hives": [],
+  "scan_paths": [],
+  "port": 3847
+}
+GCFG
+  fi
+}
+
+register_hive() {
+  local hive_path="$1" hive_name="${2:-$(basename "$1")}"
+  ensure_global
+  local already
+  already=$(jq --arg p "$hive_path" '[.hives[] | select(.path == $p)] | length' "$FLEET_GLOBAL_CONFIG")
+  if [[ "$already" -gt 0 ]]; then return 0; fi
+  local tmp; tmp=$(mktemp)
+  jq --arg p "$hive_path" --arg n "$hive_name" \
+    '.hives += [{"path": $p, "name": $n, "registered": (now | strftime("%Y-%m-%d"))}]' \
+    "$FLEET_GLOBAL_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_GLOBAL_CONFIG"
+}
+
+# ─── SERVE ───
+cmd_serve() {
+  local port=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --port|-p) port="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+
+  ensure_global
+  [[ -z "$port" ]] && port=$(jq -r '.port // 3847' "$FLEET_GLOBAL_CONFIG")
+
+  command -v node &>/dev/null || die "Node.js required for dashboard. Install: brew install node"
+
+  info "Starting fleet dashboard on http://localhost:${port}"
+  dim "Press Ctrl+C to stop"
+  echo ""
+
+  FLEET_PORT="$port" FLEET_GLOBAL_DIR="$FLEET_GLOBAL" node "$FLEET_SCRIPT_DIR/lib/server.js"
+}
+
+# ─── HIVES (list all) ───
+cmd_hives() {
+  ensure_global
+  echo ""
+  bold "Registered hives"
+  echo ""
+
+  local count
+  count=$(jq '.hives | length' "$FLEET_GLOBAL_CONFIG")
+
+  if [[ "$count" -eq 0 ]]; then
+    dim "  No hives registered. Run 'fleet init' in a project or 'fleet scan'."
+    echo ""
+    return
+  fi
+
+  for i in $(seq 0 $((count - 1))); do
+    local name path
+    name=$(jq -r ".hives[$i].name" "$FLEET_GLOBAL_CONFIG")
+    path=$(jq -r ".hives[$i].path" "$FLEET_GLOBAL_CONFIG")
+
+    if [[ -f "$path/.fleet/fleet.json" ]]; then
+      local type bee_count
+      type=$(jq -r '.type' "$path/.fleet/fleet.json")
+      bee_count=$(ls -d "$path"/bee* 2>/dev/null | wc -l | tr -d ' ')
+      printf "  ${GREEN}%-20s${NC} %s  ${DIM}(%s, %s bees)${NC}\n" "$name" "$path" "$type" "$bee_count"
+    else
+      printf "  ${RED}%-20s${NC} %s  ${DIM}(missing)${NC}\n" "$name" "$path"
+    fi
+  done
+  echo ""
+}
+
+# ─── REGISTER ───
+cmd_register() {
+  local path="${1:-$PWD}"
+  [[ "$path" != /* ]] && path="$PWD/$path"
+  path=$(cd "$path" 2>/dev/null && pwd) || die "Path not found: ${1:-$PWD}"
+
+  [[ -f "$path/.fleet/fleet.json" ]] || die "Not a fleet hive: $path"
+
+  local name
+  name=$(jq -r '.name' "$path/.fleet/fleet.json")
+  register_hive "$path" "$name"
+  ok "Registered: $name ($path)"
+}
+
+# ─── UNREGISTER ───
+cmd_unregister() {
+  [[ $# -lt 1 ]] && die "Usage: fleet unregister <name-or-path>"
+  ensure_global
+  local arg="$1" tmp
+  tmp=$(mktemp)
+  jq --arg a "$arg" '.hives = [.hives[] | select(.name != $a and .path != $a)]' \
+    "$FLEET_GLOBAL_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_GLOBAL_CONFIG"
+  ok "Unregistered: $arg"
+}
+
+# ─── SCAN ───
+_standalone_has_sessions() {
+  local candidate="$1" encoded
+  encoded=$(echo "$candidate" | tr '/' '-')
+
+  local config_dir expanded project_dir
+  while IFS= read -r config_dir; do
+    expanded="${config_dir/#\~/$HOME}"
+    project_dir="$expanded/projects/$encoded"
+    [[ -d "$project_dir" ]] && compgen -G "$project_dir/*.jsonl" >/dev/null 2>&1 && return 0
+  done < <(
+    { echo "$HOME/.claude"; jq -r '.accounts[]?.config_dir' "$FLEET_GLOBAL_CONFIG" 2>/dev/null; } | awk '!seen[$0]++'
+  )
+  return 1
+}
+
+_path_in_registered_hive() {
+  local candidate="$1" hive
+  while IFS= read -r hive; do
+    [[ "$candidate" == "$hive" || "$candidate" == "$hive/"* ]] && return 0
+  done < <(jq -r '.hives[]?.path' "$FLEET_GLOBAL_CONFIG" 2>/dev/null)
+  return 1
+}
+
+_known_claude_cwds() {
+  local config_dir expanded project session cwd
+  while IFS= read -r config_dir; do
+    expanded="${config_dir/#\~/$HOME}"
+    for project in "$expanded"/projects/*; do
+      [[ -d "$project" || -L "$project" ]] || continue
+      for session in "$project"/*.jsonl; do
+        [[ -f "$session" ]] || continue
+        cwd=$(jq -r 'select(.cwd? != null) | .cwd' "$session" 2>/dev/null | sed -n '1p')
+        [[ -n "$cwd" ]] && echo "$cwd"
+      done
+    done
+  done < <(
+    { echo "$HOME/.claude"; jq -r '.accounts[]?.config_dir' "$FLEET_GLOBAL_CONFIG" 2>/dev/null; } | awk '!seen[$0]++'
+  )
+}
+
+_live_claude_cwds() {
+  local pid cwd
+  while IFS= read -r pid; do
+    [[ "$pid" =~ ^[0-9]+$ ]] || continue
+    cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n\(\/.*\)$/\1/p')
+    [[ -n "$cwd" ]] && echo "$cwd"
+  done < <(
+    ps -axo pid=,command= 2>/dev/null |
+      awk '{ cmd=$2; sub(/^.*\//, "", cmd); if (cmd ~ /^claude(-[[:alnum:]_-]+)?$/) print $1 }'
+  )
+}
+
+cmd_scan() {
+  ensure_global
+  local found=0 strays=0
+  local scan_paths
+  scan_paths=$(jq -r '.scan_paths[]' "$FLEET_GLOBAL_CONFIG" 2>/dev/null)
+
+  info "Scanning for hives and stray bees..."
+
+  # Claude session metadata includes the original cwd, so this works even when
+  # no filesystem scan paths have been configured.
+  local session_path live_paths marker
+  live_paths=$(_live_claude_cwds | sort -u)
+  while IFS= read -r session_path; do
+    [[ -d "$session_path" ]] || continue
+    _path_in_registered_hive "$session_path" && continue
+    if grep -qxF "$session_path" <<< "$live_paths"; then
+      marker="ACTIVE"
+    else
+      marker="ASLEEP"
+    fi
+    warn "  Stray bee: $(basename "$session_path")  $session_path  ($marker)"
+    { ((strays++)) || true; }
+  done < <({ _known_claude_cwds; printf '%s\n' "$live_paths"; } | sed '/^$/d' | sort -u)
+
+  while IFS= read -r sp; do
+    local expanded="${sp/#\~/$HOME}"
+    [[ -d "$expanded" ]] || continue
+    for candidate in "$expanded"/*/; do
+      if [[ -f "$candidate/.fleet/fleet.json" ]]; then
+        local name
+        name=$(jq -r '.name' "$candidate/.fleet/fleet.json")
+        register_hive "$(cd "$candidate" && pwd)" "$name"
+        ok "  Found: $name"
+        { ((found++)) || true; }
+      elif [[ -d "$candidate/.git" || -f "$candidate/CLAUDE.md" || -d "$candidate/.claude" ]] || _standalone_has_sessions "$(cd "$candidate" && pwd)"; then
+        warn "  Stray bee: $(basename "$candidate")  $(cd "$candidate" && pwd)"
+        { ((strays++)) || true; }
+      fi
+    done
+  done <<< "$scan_paths"
+
+  [[ $found -eq 0 ]] && dim "  No new hives found" || ok "Found $found hive(s)"
+  [[ $strays -eq 0 ]] && dim "  No stray bees found" || warn "Found $strays stray bee(s) not in a hive"
+}
+
+# ─── CONFIG ───
+cmd_config() {
+  ensure_global
+  case "${1:-}" in
+    scan-path)
+      [[ -z "${2:-}" ]] && die "Usage: fleet config scan-path <path>"
+      local tmp; tmp=$(mktemp)
+      jq --arg p "$2" '.scan_paths += [$p] | .scan_paths |= unique' \
+        "$FLEET_GLOBAL_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_GLOBAL_CONFIG"
+      ok "Added scan path: $2"
+      ;;
+    account)
+      [[ -z "${2:-}" || -z "${3:-}" ]] && die "Usage: fleet config account <name> <config-dir> [command]"
+      local aname="$2" adir="$3" acmd="${4:-claude}"
+      local tmp; tmp=$(mktemp)
+      jq --arg n "$aname" --arg d "$adir" --arg c "$acmd" \
+        '.accounts = [.accounts[] | select(.name != $n)] + [{"name": $n, "config_dir": $d, "command": $c}]' \
+        "$FLEET_GLOBAL_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_GLOBAL_CONFIG"
+      ok "Account configured: $aname (dir: $adir, cmd: $acmd)"
+      ;;
+    port)
+      [[ -z "${2:-}" ]] && die "Usage: fleet config port <number>"
+      local tmp; tmp=$(mktemp)
+      jq --argjson p "$2" '.port = $p' "$FLEET_GLOBAL_CONFIG" > "$tmp" && mv "$tmp" "$FLEET_GLOBAL_CONFIG"
+      ok "Port set: $2"
+      ;;
+    show|"")
+      jq '.' "$FLEET_GLOBAL_CONFIG"
+      ;;
+    *)
+      die "Unknown config key: $1 (use: scan-path, account, port, show)"
+      ;;
+  esac
+}
+
+# ════════════════════════════════════════════════════════
+#  MAIN
+# ════════════════════════════════════════════════════════
+main() {
+  require_jq
+
+  case "${1:-}" in
+    init)       shift; cmd_init "$@" ;;
+    spawn)      shift; cmd_spawn "$@" ;;
+    adopt)      shift; cmd_adopt "$@" ;;
+    status)     cmd_status ;;
+    launch)     shift; cmd_launch "$@" ;;
+    destroy)    shift; cmd_destroy "$@" ;;
+    doctor)     cmd_doctor ;;
+    eject)      shift; cmd_eject "$@" ;;
+    refresh)    cmd_refresh ;;
+    clean)      cmd_clean ;;
+    journal)    cmd_journal ;;
+    brain)      cmd_brain ;;
+    event)      shift; cmd_event "$@" ;;
+    serve)      shift; cmd_serve "$@" ;;
+    hives)      cmd_hives ;;
+    register)   shift; cmd_register "$@" ;;
+    unregister) shift; cmd_unregister "$@" ;;
+    scan)       cmd_scan ;;
+    config)     shift; cmd_config "$@" ;;
+    -v|--version|version) echo "fleet $VERSION" ;;
+    -h|--help|help) show_help ;;
+    "") cmd_interactive ;;
+    *) die "Unknown command: $1 (run 'fleet help')" ;;
+  esac
+}
+
+main "$@"

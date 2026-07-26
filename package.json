@@ -1,0 +1,35 @@
+{
+  "name": "claude-fleet",
+  "version": "1.0.0",
+  "description": "Multi-session Claude Code CLI manager — one brain, many sessions",
+  "bin": {
+    "fleet": "./bin/fleet"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "files": [
+    "bin/",
+    "lib/"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "cli",
+    "multi-session",
+    "fleet",
+    "hive",
+    "ai",
+    "devtools"
+  ],
+  "author": "Osama Yusuf",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Osama-Yusuf/fleet.git"
+  },
+  "homepage": "https://github.com/Osama-Yusuf/fleet#readme",
+  "engines": {
+    "node": ">=18"
+  }
+}
