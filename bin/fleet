@@ -99,16 +99,31 @@ merge_settings() {
   ' "$dst" "$src" > "$tmp" && mv "$tmp" "$dst"
 }
 
-# ─── Claude session linking + trust ───
+# ─── Claude session copy + trust ───
 _setup_bee_claude() {
-  local hive="$1" bee_name="$2"
+  local hive="$1" bee_name="$2" source_dir="${3:-}"
   local bee_path="${hive}/${bee_name}"
-  local hive_proj="$HOME/.claude/projects/$(echo "$hive" | tr '/' '-')"
   local bee_proj="$HOME/.claude/projects/$(echo "$bee_path" | tr '/' '-')"
 
-  if [[ -d "$hive_proj" && ! -e "$bee_proj" ]]; then
-    ln -s "$hive_proj" "$bee_proj"
-    dim "  Linked Claude sessions for $bee_name"
+  if [[ -e "$bee_proj" ]]; then
+    _trust_path "$bee_path"
+    return
+  fi
+
+  local src_proj=""
+  if [[ -n "$source_dir" ]]; then
+    src_proj="$HOME/.claude/projects/$(echo "$source_dir" | tr '/' '-')"
+  else
+    src_proj="$HOME/.claude/projects/$(echo "$hive" | tr '/' '-')"
+  fi
+
+  [[ -L "$src_proj" ]] && src_proj=$(readlink -f "$src_proj")
+
+  if [[ -d "$src_proj" ]]; then
+    cp -r "$src_proj" "$bee_proj"
+    dim "  Copied Claude sessions for $bee_name"
+  else
+    mkdir -p "$bee_proj"
   fi
 
   _trust_path "$bee_path"
@@ -128,9 +143,6 @@ _trust_path() {
 _bee_has_sessions() {
   local dir="$1"
   local proj="$HOME/.claude/projects/$(echo "$dir" | tr '/' '-')"
-  if [[ -L "$proj" ]]; then
-    proj=$(readlink "$proj")
-  fi
   [[ -d "$proj" ]] && compgen -G "$proj/*.jsonl" >/dev/null 2>&1
 }
 
@@ -225,6 +237,14 @@ Keep the bee's durable timeline current in addition to the active claim and shar
 Do not log every prompt or file read. Record meaningful changes of state that another person would want in the bee's history.
 HISTORY
     fi
+    if ! grep -q "EXISTENCE means" "$fleet_dir/RULES.md"; then
+      cat >> "$fleet_dir/RULES.md" <<'CLAIMS'
+
+## Claims are presence, not status
+
+**The claim file's EXISTENCE means "working right now."** Never leave `.fleet/active/<bee>.md` behind with "idle", "done", "session complete", or "awaiting command" in it — that is not a status field. When you finish or go idle, DELETE the file (`rm`, not edit). Idle = no file.
+CLAIMS
+    fi
     return
   fi
   cat > "$fleet_dir/RULES.md" <<'RULES'
@@ -263,7 +283,7 @@ When you finish something meaningful:
    - <what was done, 1-3 bullets>
    ```
 2. Update `CLAUDE.md` if you discovered something other bees should know
-3. Remove `.fleet/active/<bee>.md` ONLY if you're truly done and idle
+3. If you're done and idle, DELETE `.fleet/active/<bee>.md` — never write "idle" or "done" into it
 
 ## 5. Update the brain
 
@@ -278,9 +298,11 @@ When you discover something important (a gotcha, a pattern, a decision), add it 
 ## 7. Clean exit
 
 When the user ends your session or you finish all work:
-1. Remove `.fleet/active/<bee>.md`
+1. DELETE `.fleet/active/<bee>.md` (`rm`, not edit)
 2. Write a journal entry if you did anything significant
 3. Update `CLAUDE.md` with any new knowledge
+
+**The claim file's EXISTENCE means "working right now."** Never leave a claim behind with "idle", "done", "session complete", or "awaiting command" in it — that is not a status field. Idle = no file.
 
 ## Permanent bee history
 
@@ -568,7 +590,7 @@ _adopt_impl() {
   # Register
   local branch=""
   [[ -d "$hive/$bee/.git" ]] && branch=$(cd "$hive/$bee" && git branch --show-current 2>/dev/null || true)
-  _setup_bee_claude "$hive" "$bee"
+  _setup_bee_claude "$hive" "$bee" "$src"
   register_bee "$hive" "$bee" "adopt" "$branch" "$src_name"
   bump_next_bee "$hive"
 
@@ -666,7 +688,7 @@ cmd_spawn() {
       ok "Created $bee/ (symlinks)"
     fi
 
-    _setup_bee_claude "$hive" "$bee"
+    _setup_bee_claude "$hive" "$bee" "${hive}/bee1"
     register_bee "$hive" "$bee" "spawn" "$branch"
     bump_next_bee "$hive"
   done
@@ -799,9 +821,21 @@ cmd_doctor() {
     local hive_proj="$HOME/.claude/projects/$(echo "$hive" | tr '/' '-')"
     local bee_proj="$HOME/.claude/projects/$(echo "$bee_path" | tr '/' '-')"
 
-    if [[ -d "$hive_proj" && ! -e "$bee_proj" ]]; then
-      ln -s "$hive_proj" "$bee_proj"
-      ok "  Fixed: linked Claude sessions for $b"; { ((fixed++)) || true; }
+    if [[ ! -e "$bee_proj" ]]; then
+      local src_proj="$hive_proj"
+      [[ -L "$src_proj" ]] && src_proj=$(readlink -f "$src_proj")
+      if [[ -d "$src_proj" ]]; then
+        cp -r "$src_proj" "$bee_proj"
+        ok "  Fixed: copied Claude sessions for $b"; { ((fixed++)) || true; }
+      else
+        mkdir -p "$bee_proj"
+        ok "  Fixed: created Claude session dir for $b"; { ((fixed++)) || true; }
+      fi
+    elif [[ -L "$bee_proj" ]]; then
+      local resolved; resolved=$(readlink -f "$bee_proj")
+      rm "$bee_proj"
+      cp -r "$resolved" "$bee_proj"
+      ok "  Fixed: replaced symlink with copy for $b"; { ((fixed++)) || true; }
     fi
 
     local cj="$HOME/.claude.json"
@@ -972,6 +1006,79 @@ cmd_clean() {
 cmd_journal() { local h; h=$(hive_root); ${EDITOR:-less} "$h/.fleet/journal.md"; }
 cmd_brain()   { local h; h=$(hive_root); ${EDITOR:-vim} "$h/CLAUDE.md"; }
 
+cmd_artifact() {
+  local hive
+  hive=$(hive_root)
+
+  if [[ $# -lt 1 || "$1" == "ls" ]]; then
+    local art_dir="$hive/artifacts"
+    if [[ ! -d "$art_dir" ]] || [[ -z "$(ls -A "$art_dir" 2>/dev/null)" ]]; then
+      dim "No shared artifacts yet."
+      dim "Usage: fleet artifact <file-or-dir> [file2 ...]"
+      return
+    fi
+    echo ""
+    echo "  Shared artifacts in $(basename "$hive")/artifacts/"
+    echo ""
+    local count=0
+    while IFS= read -r f; do
+      local rel="${f#"$art_dir/"}"
+      local sz
+      if [[ -d "$f" ]]; then
+        sz="dir"
+      else
+        sz=$(du -h "$f" 2>/dev/null | cut -f1 | xargs)
+      fi
+      printf "    %-40s %s\n" "$rel" "$sz"
+      { ((count++)) || true; }
+    done < <(find "$art_dir" -maxdepth 2 -not -path "$art_dir" | sort)
+    echo ""
+    dim "  $count item(s)"
+    return
+  fi
+
+  local art_dir="$hive/artifacts"
+  mkdir -p "$art_dir"
+
+  local copied=0
+  for src in "$@"; do
+    if [[ ! -e "$src" ]]; then
+      local resolved=""
+      for b in "$hive"/bee*; do
+        [[ -d "$b" ]] || continue
+        if [[ -e "$b/$src" ]]; then
+          resolved="$b/$src"
+          break
+        fi
+      done
+      if [[ -z "$resolved" ]]; then
+        warn "Not found: $src"
+        continue
+      fi
+      src="$resolved"
+    fi
+
+    local name
+    name=$(basename "$src")
+    if [[ -e "$art_dir/$name" ]]; then
+      warn "Already exists: artifacts/$name (skipping)"
+      continue
+    fi
+    cp -r "$src" "$art_dir/$name"
+    ok "Shared: $name → artifacts/"
+    { ((copied++)) || true; }
+  done
+
+  if [[ $copied -gt 0 ]]; then
+    for b in "$hive"/bee*; do
+      [[ -d "$b" ]] || continue
+      [[ -L "$b/artifacts" ]] && continue
+      ln -sf ../artifacts "$b/artifacts"
+    done
+    ok "Shared $copied artifact(s)"
+  fi
+}
+
 cmd_event() {
   [[ $# -lt 2 ]] && die "Usage: fleet event <milestone|decision|discovery|blocker|test|complete|note> <message>"
   local type="$1"; shift
@@ -1017,6 +1124,7 @@ show_help() {
     journal                       View work log
     brain                         Edit CLAUDE.md
     event <type> <message>        Add to this bee's permanent timeline
+    artifact [file ...] | ls      Share files to hive artifacts/
 
   Global:
     serve [--port N]              Start web dashboard (default: 3847)
@@ -1350,6 +1458,7 @@ main() {
     journal)    cmd_journal ;;
     brain)      cmd_brain ;;
     event)      shift; cmd_event "$@" ;;
+    artifact)   shift; cmd_artifact "$@" ;;
     serve)      shift; cmd_serve "$@" ;;
     hives)      cmd_hives ;;
     register)   shift; cmd_register "$@" ;;
