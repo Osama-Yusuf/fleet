@@ -668,13 +668,13 @@ cmd_spawn() {
       remote=$(jq -r '.git_remote // empty' .fleet/fleet.json)
       if [[ -n "$remote" ]]; then
         if [[ -n "$branch" ]]; then
-          git clone --branch "$branch" "$remote" "$bee" 2>/dev/null || git clone "$remote" "$bee" 2>/dev/null
+          git clone --shared --branch "$branch" "$remote" "$bee" 2>/dev/null || git clone --shared "$remote" "$bee" 2>/dev/null
           (cd "$bee" && git checkout -B "$branch" 2>/dev/null || true)
         else
-          git clone "$remote" "$bee" 2>/dev/null
+          git clone --shared "$remote" "$bee" 2>/dev/null
         fi
       else
-        git clone bee1 "$bee" 2>/dev/null
+        git clone --shared bee1 "$bee" 2>/dev/null
         [[ -n "$branch" ]] && (cd "$bee" && git checkout -b "$branch" 2>/dev/null)
       fi
       rm -f "$bee/CLAUDE.md"; rm -rf "$bee/.claude" "$bee/.fleet"

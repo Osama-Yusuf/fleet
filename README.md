@@ -281,6 +281,26 @@ Fleet registers hives it finds and separately reports standalone project directo
 3. **Update** — keep the brain current when discovering new info
 4. **Log** — append to `.fleet/journal.md` on significant completion
 
+## Design Decisions
+
+### Why full clones instead of Git worktrees?
+
+Experienced Git users will immediately ask: "Why not `git worktree add` instead of cloning N times?" Fleet deliberately uses full clones for several reasons:
+
+1. **Same branch on multiple bees.** Git worktrees forbid checking out the same branch in two worktrees simultaneously. Fleet regularly runs multiple bees on `main` — one reviewing, one fixing, one exploring.
+
+2. **Independent remotes.** A worktree shares `.git` with the main tree. You can't point bee1 at `origin` and bee2 at a fork. Clones give each bee its own remote configuration.
+
+3. **Clean lifecycle.** Destroying a bee is `rm -rf`. With worktrees you need `git worktree remove`, and if the main worktree is destroyed, all linked worktrees break.
+
+4. **Claude session identity.** Claude Code keys its project directory on the absolute path. Each bee needs a distinct path with its own session history — worktrees satisfy this, but clones do it without the coupling.
+
+To mitigate the disk cost, Fleet uses `git clone --shared` for repo-hive spawns, which hardlinks `.git/objects` from the source instead of copying them. This gives each bee an independent working tree and ref namespace while sharing the bulk of Git's object storage.
+
+### Why copies instead of symlinks for Claude project dirs?
+
+Each bee gets a **copy** of the Claude project directory (`~/.claude/projects/...`), not a symlink. Symlinks caused session state from one bee to leak into another — Claude would resume a different bee's conversation. Copies ensure full session isolation while preserving the session history from the source bee at the time of creation.
+
 ## License
 
 MIT
