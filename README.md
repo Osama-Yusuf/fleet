@@ -285,17 +285,15 @@ Fleet registers hives it finds and separately reports standalone project directo
 
 ### Why full clones instead of Git worktrees?
 
-Experienced Git users will immediately ask: "Why not `git worktree add` instead of cloning N times?" Fleet deliberately uses full clones for several reasons:
+Experienced Git users will immediately ask: "Why not `git worktree add` instead of cloning N times?" Fleet deliberately uses full clones for two reasons:
 
 1. **Same branch on multiple bees.** Git worktrees forbid checking out the same branch in two worktrees simultaneously. Fleet regularly runs multiple bees on `main` — one reviewing, one fixing, one exploring.
 
 2. **Independent remotes.** A worktree shares `.git` with the main tree. You can't point bee1 at `origin` and bee2 at a fork. Clones give each bee its own remote configuration.
 
-3. **Clean lifecycle.** Destroying a bee is `rm -rf`. With worktrees you need `git worktree remove`, and if the main worktree is destroyed, all linked worktrees break.
+When spawning from a local bee (the common case), `git clone` defaults to `--local`, which hardlinks `.git/objects` from the source rather than copying them. Git objects are immutable and gc writes new packfiles rather than mutating existing ones, so hardlinks stay safe — deleting or garbage-collecting any bee never affects its siblings. Each bee gets a fully independent working tree and ref namespace with minimal disk overhead.
 
-4. **Claude session identity.** Claude Code keys its project directory on the absolute path. Each bee needs a distinct path with its own session history — worktrees satisfy this, but clones do it without the coupling.
-
-To mitigate the disk cost, Fleet uses `git clone --shared` for repo-hive spawns, which hardlinks `.git/objects` from the source instead of copying them. This gives each bee an independent working tree and ref namespace while sharing the bulk of Git's object storage.
+Fleet deliberately avoids `--shared` (alternates) because it creates a dependency chain: if the source repo is deleted or gc'd, every clone pointing at it via alternates becomes corrupted. Hardlinks provide the same disk savings without the coupling.
 
 ### Why copies instead of symlinks for Claude project dirs?
 
