@@ -151,6 +151,14 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 .stray-item.running::after{background:var(--green);opacity:1}
 .stray-item .hive-name{font-weight:500}
 .sidebar-empty{font-size:.75rem;color:var(--text3);padding:14px;text-align:center;line-height:1.65}
+.ctx-menu{position:fixed;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.35);min-width:160px;padding:4px 0;font-size:.8125rem;font-family:var(--mono)}
+.ctx-menu-item{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;color:var(--text);transition:background 80ms}
+.ctx-menu-item:hover{background:var(--accent-bg)}
+.ctx-menu-item.danger{color:var(--red,#e55)}
+.ctx-menu-item.danger:hover{background:rgba(229,85,85,.1)}
+.ctx-menu-sep{height:1px;background:var(--border);margin:4px 0}
+.ctx-menu-label{padding:5px 14px;font-size:.625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+.sidebar-label{cursor:default}
 .sidebar-bottom{padding:10px 12px;box-shadow:inset 0 1px 0 var(--border)}
 .sidebar-search{position:relative}
 .sidebar-search input{width:100%;padding:7px 10px 7px 28px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg) no-repeat 8px center/14px 14px;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' stroke='%23777' stroke-width='1.6' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='6.5' cy='6.5' r='4.8'/%3E%3Cline x1='10' y1='10' x2='14' y2='14'/%3E%3C/svg%3E");color:var(--text);font-family:var(--mono);font-size:.75rem;outline:none;transition:border-color 140ms,box-shadow 140ms}
@@ -637,11 +645,11 @@ input[type="text"]::placeholder{color:var(--text3)}
     </div>
   </div>
   <div class="side-group grow">
-    <div class="sidebar-label"><span>Hives</span><span class="sidebar-count tabnum" id="hiveCt">0</span></div>
+    <div class="sidebar-label" id="hivesLabel" oncontextmenu="window._showUnhideMenu(event,'hive')"><span>Hives</span><span class="sidebar-count tabnum" id="hiveCt">0</span></div>
     <nav class="hive-list" id="hiveList"></nav>
   </div>
   <div class="side-group">
-    <div class="sidebar-label"><span>Stray bees</span><span class="sidebar-count tabnum" id="strayCt">0</span></div>
+    <div class="sidebar-label" id="straysLabel" oncontextmenu="window._showUnhideMenu(event,'stray')"><span>Stray bees</span><span class="sidebar-count tabnum" id="strayCt">0</span></div>
     <nav class="stray-list" id="strayList"></nav>
   </div>
   <div class="sidebar-bottom">
@@ -808,6 +816,10 @@ input[type="text"]::placeholder{color:var(--text3)}
 (function(){
   let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={};
   let openAcct=null, destroyBee=null, mdMode='rendered';
+
+  // hidden items (cosmetic dashboard-only, persisted in localStorage)
+  let hiddenItems=new Set();try{hiddenItems=new Set(JSON.parse(localStorage.getItem('fleet-hidden')||'[]'));}catch{}
+  function _saveHidden(){localStorage.setItem('fleet-hidden',JSON.stringify([...hiddenItems]));}
 
   // search state
   const SRCS=[
@@ -992,17 +1004,19 @@ input[type="text"]::placeholder{color:var(--text3)}
     if(clearEl){clearEl.style.display=q?'flex':'none';}
 
     const filteredHives=hives.filter(h=>{
+      if(hiddenItems.has('hive:'+h.name))return false;
       if(!q)return true;
       if(h.name.toLowerCase().includes(q))return true;
       if((h.path||'').toLowerCase().includes(q))return true;
       return (h.bees||[]).some(b=>b.name.toLowerCase().includes(q)||(b.task||'').toLowerCase().includes(q)||(b.branch||'').toLowerCase().includes(q));
     });
     const filteredStrays=strays.filter(s=>{
+      if(hiddenItems.has('stray:'+s.path))return false;
       if(!q)return true;
       return s.name.toLowerCase().includes(q)||(s.path||'').toLowerCase().includes(q);
     });
 
-    $('hiveCt').textContent=q?`${filteredHives.length}/${hives.length}`:hives.length;
+    $('hiveCt').textContent=q?`${filteredHives.length}/${hives.length}`:filteredHives.length;
     const list=$('hiveList');
     if(!filteredHives.length){
       list.innerHTML=q?'<div class="sidebar-empty">No matches</div>':'<div class="sidebar-empty">No hives registered yet.<br>Create one or scan to discover existing hives.</div>';
@@ -1011,20 +1025,20 @@ input[type="text"]::placeholder{color:var(--text3)}
         const active=sel&&sel.name===h.name;
         const ct=(h.bees||[]).length;
         const t=h.type==='brain'?'brain':(h.type||'repo');
-        return `<button class="hive-item${active?' active':''}" onclick="window._selHive('${esc(h.name)}')">
+        return `<button class="hive-item${active?' active':''}" onclick="window._selHive('${esc(h.name)}')" oncontextmenu="window._showHideMenu(event,'hive','${esc(h.name)}')">
           <span class="hive-name">${esc(h.name)}</span>
           <span class="hive-badge ${t}">${t}</span>
           <span class="hive-bee-ct tabnum">${ct}</span>
         </button>`;
       }).join('');
     }
-    $('strayCt').textContent=q?`${filteredStrays.length}/${strays.length}`:strays.length;
+    $('strayCt').textContent=q?`${filteredStrays.length}/${strays.length}`:filteredStrays.length;
     $('strayList').innerHTML=filteredStrays.length?filteredStrays.map(s=>{
       const status=s.active?'Active':'Asleep';
       const help=s.active
         ?'Active: a Claude CLI process is open in this folder. It may be working or waiting for input.'
         :'Asleep: Claude session history exists, but no Claude CLI process is currently open.';
-      return `<button class="hive-item stray-item${s.active?' running':''}${selectedStray&&selectedStray.path===s.path?' active':''}" onclick="window._selStray('${esc(s.path)}')" title="${esc(help)}&#10;${esc(s.path)}" aria-label="${esc(s.name)}: ${status}. ${help}">
+      return `<button class="hive-item stray-item${s.active?' running':''}${selectedStray&&selectedStray.path===s.path?' active':''}" onclick="window._selStray('${esc(s.path)}')" oncontextmenu="window._showHideMenu(event,'stray','${esc(s.path)}')" title="${esc(help)}&#10;${esc(s.path)}" aria-label="${esc(s.name)}: ${status}. ${help}">
         <span class="bee-dot ${s.active?'on':'off'}"></span>
         <span class="hive-name">${esc(s.name)}</span>
         <span class="hive-bee-ct">${status}</span>
@@ -1037,6 +1051,54 @@ input[type="text"]::placeholder{color:var(--text3)}
     const inp=$('sidebarSearch');
     if(inp){inp.value='';inp.focus();}
     renderSidebar();
+  };
+
+  // ── Context menus for hide/unhide ──
+  function _closeCtx(){const el=document.querySelector('.ctx-menu');if(el)el.remove();}
+  document.addEventListener('click',_closeCtx);
+  document.addEventListener('contextmenu',function(e){
+    if(!e.target.closest('.ctx-menu'))_closeCtx();
+  });
+
+  window._showHideMenu=function(e,type,id){
+    e.preventDefault();e.stopPropagation();_closeCtx();
+    const name=type==='hive'?id:id.split('/').pop();
+    const menu=document.createElement('div');
+    menu.className='ctx-menu';
+    menu.innerHTML=`<div class="ctx-menu-item danger" onclick="window._hideItem('${type}','${esc(id)}')">Hide "${esc(name)}"</div>`;
+    menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
+    document.body.appendChild(menu);
+    // keep menu in viewport
+    const r=menu.getBoundingClientRect();
+    if(r.right>window.innerWidth)menu.style.left=(window.innerWidth-r.width-8)+'px';
+    if(r.bottom>window.innerHeight)menu.style.top=(window.innerHeight-r.height-8)+'px';
+  };
+
+  window._showUnhideMenu=function(e,type){
+    e.preventDefault();e.stopPropagation();_closeCtx();
+    const items=type==='hive'
+      ?hives.filter(h=>hiddenItems.has('hive:'+h.name)).map(h=>({key:'hive:'+h.name,label:h.name}))
+      :strays.filter(s=>hiddenItems.has('stray:'+s.path)).map(s=>({key:'stray:'+s.path,label:s.name}));
+    if(!items.length)return;
+    const menu=document.createElement('div');
+    menu.className='ctx-menu';
+    let h='<div class="ctx-menu-label">Hidden '+type+'s</div>';
+    items.forEach(it=>{
+      h+=`<div class="ctx-menu-item" onclick="window._unhideItem('${esc(it.key)}')">${esc(it.label)}</div>`;
+    });
+    menu.innerHTML=h;
+    menu.style.left=e.clientX+'px';menu.style.top=e.clientY+'px';
+    document.body.appendChild(menu);
+    const r=menu.getBoundingClientRect();
+    if(r.right>window.innerWidth)menu.style.left=(window.innerWidth-r.width-8)+'px';
+    if(r.bottom>window.innerHeight)menu.style.top=(window.innerHeight-r.height-8)+'px';
+  };
+
+  window._hideItem=function(type,id){
+    hiddenItems.add(type+':'+id);_saveHidden();_closeCtx();renderSidebar();
+  };
+  window._unhideItem=function(key){
+    hiddenItems.delete(key);_saveHidden();_closeCtx();renderSidebar();
   };
 
   window._selHive=function(name){

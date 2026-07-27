@@ -1,304 +1,264 @@
-# fleet
+<div align="center">
 
-Multi-session Claude Code CLI manager — one brain, many sessions.
+<img src="docs/logo.svg" alt="fleetode" width="160">
 
-## The Problem
+# fleetode
 
-When you run multiple Claude Code CLI sessions on the same project, a few practical problems show up:
+**One brain, many sessions.**
 
-- **Session death on restart** — Mac reboots, only one session survives. The workaround: duplicate the project dir so each session has its own resumable home.
-- **Slow session setup** — Bootstrapping another Claude session means copying the project, restoring trust and permissions, finding the right context, and remembering how to resume it.
-- **Brain fragmentation** — Each duplicate gets its own CLAUDE.md. Knowledge drifts. One session discovers something, the others never know.
-- **No coordination** — Sessions don't know what the others are working on. They collide, duplicate effort, or overwrite each other.
-- **Stray projects** — Standalone Claude workspaces accumulate across your repos with no clear view of which ones belong together.
+Manage multiple Claude Code sessions on the same project.<br>
+Shared brain, isolated workspaces, real-time dashboard.<br>
+No API keys, no auth, no config.
 
-Fleet gives those sessions a lightweight home: one shared brain (`CLAUDE.md`), reproducible worker sessions (bees), and one parent directory (the hive). Spawning a bee bootstraps a trusted, resumable Claude workspace in one command; scanning also surfaces standalone “stray bees” before you decide whether to turn one into a hive or adopt it into an existing one.
+<a href="https://www.npmjs.com/package/fleetode"><img src="https://img.shields.io/npm/v/fleetode?style=flat-square&labelColor=1a1a1a&color=f5b301" alt="NPM Version"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-f5b301?style=flat-square&labelColor=1a1a1a" alt="License: MIT"></a>
+<img src="https://img.shields.io/badge/dependencies-0-f5b301?style=flat-square&labelColor=1a1a1a" alt="Zero Dependencies">
+<img src="https://img.shields.io/badge/node-18%2B-f5b301?style=flat-square&labelColor=1a1a1a" alt="Node 18+">
 
-## Install
+<br>
 
-```bash
-npm i -g claude-fleet
-```
+[Why](#why) · [How it works](#how-it-works) · [Dashboard](#dashboard) · [Commands](#commands) · [Coordination](#coordination) · [Requirements](#requirements)
 
-**Requirements:** `jq` (`brew install jq`), `claude` CLI.
+</div>
 
-## Two Modes
-
-| | Brain Hive | Repo Hive |
-|---|---|---|
-| **For** | Knowledge-base projects (no code) | Git repos with code |
-| **Bees are** | Symlink directories | Full git clones (own branch) |
-| **Example** | Research notes | sample application |
-| **Detection** | No `.git/` found | `.git/` exists |
-
-Auto-detected by `fleet init`.
-
-## Quick Start
+<br>
 
 ```bash
+npm i -g fleetode
+
 cd ~/my-project
-fleet init
-
-# Creates:
-#   my-project/         ← hive (brain, config)
-#     bee1/             ← your original project
-#     .fleet/           ← fleet config + profile
-#     CLAUDE.md         ← shared brain
-
-cd bee1 && claude      # start working
+fleet init          # wraps your project as a hive with bee1
+fleet spawn         # creates bee2 (full git clone, shared brain)
+fleet spawn         # creates bee3
+fleet serve         # opens the dashboard at localhost:3847
 ```
 
-## How It Works
+<br>
 
-```mermaid
-graph TB
-    subgraph Hive["Hive (parent dir)"]
-        BRAIN["CLAUDE.md<br/><i>shared brain</i>"]
-        FLEET[".fleet/<br/><i>config, profile, journal</i>"]
-        CLAUDE_DIR[".claude/<br/><i>shared permissions</i>"]
-    end
+## Why
 
-    subgraph Bee1["bee1/"]
-        B1_BRAIN["CLAUDE.md →"]
-        B1_FLEET[".fleet →"]
-        B1_CLAUDE[".claude →"]
-        B1_CODE["source code"]
-    end
+Running parallel Claude Code sessions gets real once you go past one.
 
-    subgraph Bee2["bee2/"]
-        B2_BRAIN["CLAUDE.md →"]
-        B2_FLEET[".fleet →"]
-        B2_CLAUDE[".claude →"]
-        B2_CODE["source code"]
-    end
+- **Brain drift** — each session builds its own understanding in `CLAUDE.md`. Discoveries in one session never reach the others. You end up with three slightly different versions of the truth.
+- **Stale branches** — one session pushes to main, the rest keep working on an outdated base. Nobody notices until the merge conflicts hit.
+- **Blind coordination** — sessions don't know what each other is doing. Two sessions refactor the same module. One overwrites the other's work.
+- **Session setup tax** — every new session means copying the project, restoring trust and permissions, re-establishing context. It adds up.
+- **No overview** — costs, progress, what's running, what's idle. You'd have to check each session individually to piece that together.
 
-    B1_BRAIN -.->|symlink| BRAIN
-    B1_FLEET -.->|symlink| FLEET
-    B1_CLAUDE -.->|symlink| CLAUDE_DIR
-    B2_BRAIN -.->|symlink| BRAIN
-    B2_FLEET -.->|symlink| FLEET
-    B2_CLAUDE -.->|symlink| CLAUDE_DIR
+Fleet gives parallel sessions a shared foundation: one brain, isolated git clones, and a dashboard that shows everything at a glance.
 
-    classDef shared fill:#fff7ed,stroke:#f59e0b,color:#111827
-    classDef beeLink fill:#ecfdf5,stroke:#10b981,color:#111827
-    classDef code fill:#eff6ff,stroke:#3b82f6,color:#111827
-    class BRAIN,FLEET,CLAUDE_DIR shared
-    class B1_BRAIN,B1_FLEET,B1_CLAUDE,B2_BRAIN,B2_FLEET,B2_CLAUDE beeLink
-    class B1_CODE,B2_CODE code
+<br>
+
+## How it works
+
+```
+my-project/                      ← hive
+├── CLAUDE.md                    ← shared brain (single source of truth)
+├── .claude/                     ← shared permissions
+├── .fleet/                      ← config, journal, coordination rules
+│
+├── bee1/                        ← your original project (git clone)
+│   └── CLAUDE.md → ../CLAUDE.md ← symlink
+├── bee2/                        ← spawned clone (own branch)
+│   └── CLAUDE.md → ../CLAUDE.md ← symlink
+└── bee3/
+    └── ...
 ```
 
-Every bee points to the entire shared core—not only the brain. Tasks, history, permissions, and `CLAUDE.md` stay consistent across sessions.
+Every bee symlinks back to the shared brain, permissions, and fleet config. When one bee learns something and updates `CLAUDE.md`, every other bee sees it immediately.
 
-## A Bee's Lifecycle
+| Hive type | Detected by | Each bee is |
+|---|---|---|
+| **Repo hive** | project has `.git/` | a full `git clone --local` — hardlinked objects, independent branches and remotes |
+| **Brain hive** | no git | a lightweight symlink directory |
 
-```mermaid
-flowchart LR
-    A["1 · Spawn<br/>isolated workspace"] --> B["2 · Claim<br/>visible task"]
-    B --> C["3 · Coordinate<br/>avoid collisions"]
-    C --> D["4 · Record<br/>decisions + progress"]
-    D --> E["5 · Resume<br/>continue with context"]
-```
+<br>
 
-## Init — Repo Hive
-
-The original dir keeps its name. Code moves into `bee1/`.
-
-```mermaid
-flowchart LR
-    subgraph BEFORE["BEFORE · standalone repo"]
-        direction TB
-        B_ROOT["sample-app/"]
-        B_REPO[".git/ · src/ · tests/"]
-        B_CORE["CLAUDE.md · .claude/"]
-        B_ROOT --> B_REPO
-        B_ROOT --> B_CORE
-    end
-
-    INIT(["fleet init"])
-
-    subgraph AFTER["AFTER · repo hive"]
-        direction TB
-        A_ROOT["sample-app/ · HIVE"]
-        A_CORE["SHARED CORE<br/>CLAUDE.md · .fleet/ · .claude/"]
-        A_BEE["bee1/ · original repo"]
-        A_FILES[".git/ · src/ · tests/"]
-        A_ROOT --> A_CORE
-        A_ROOT --> A_BEE --> A_FILES
-    end
-
-    BEFORE --> INIT --> AFTER
-
-    classDef shared fill:#fff7ed,stroke:#f59e0b,color:#111827
-    classDef bee fill:#ecfdf5,stroke:#10b981,color:#111827
-    classDef action fill:#eff6ff,stroke:#3b82f6,color:#111827
-    class A_CORE shared
-    class A_BEE,A_FILES bee
-    class INIT action
-```
-
-`fleet init` creates `bee1`. Run `fleet spawn` afterward to create `bee2`, `bee3`, and beyond.
-
-## Init — Brain Hive
-
-CLAUDE.md stays at hive level. Bees are just symlink dirs.
-
-```mermaid
-flowchart LR
-    subgraph BEFORE["BEFORE · knowledge workspace"]
-        direction TB
-        B_ROOT["research-notes/"]
-        B_BRAIN["CLAUDE.md"]
-        B_DATA["documents · data"]
-        B_ROOT --> B_BRAIN
-        B_ROOT --> B_DATA
-    end
-
-    INIT(["fleet init"])
-
-    subgraph AFTER["AFTER · brain hive"]
-        direction TB
-        A_ROOT["research-notes/ · HIVE"]
-        A_CORE["SHARED CORE<br/>CLAUDE.md · .fleet/ · .claude/"]
-        A_DATA["artifacts/ · backups/"]
-        A_BEE["bee1/ · linked workspace"]
-        A_ROOT --> A_CORE
-        A_ROOT --> A_DATA
-        A_ROOT --> A_BEE
-    end
-
-    BEFORE --> INIT --> AFTER
-
-    classDef shared fill:#fff7ed,stroke:#f59e0b,color:#111827
-    classDef bee fill:#ecfdf5,stroke:#10b981,color:#111827
-    classDef action fill:#eff6ff,stroke:#3b82f6,color:#111827
-    class A_CORE shared
-    class A_BEE,A_DATA bee
-    class INIT action
-```
-
-## Adopt
-
-Pull an existing directory into the hive as the next auto-incremented bee.
+## Dashboard
 
 ```bash
-fleet adopt ../sample-app-copy
-# → Adopted as bee3/ (branch: master)
-
-fleet adopt ../research-notes-copy
-# → Merged CLAUDE.md, moved PDFs to artifacts/, adopted as bee3/
+fleet serve
 ```
 
-Adopt moves the dir into the hive, merges brain content and `.claude/settings`, wires symlinks, and removes the old path.
+Your hives, bees, and standalone Claude workspaces — all in one view.
 
-```mermaid
-flowchart LR
-    BEFORE["BEFORE<br/><br/>Hive: bee1 · bee2<br/>+<br/>Standalone: project-copy/"]
-    ADOPT(["fleet adopt project-copy/"])
-    AFTER["AFTER<br/><br/>Hive: bee1 · bee2 · bee3<br/>bee3 keeps its files<br/>and receives shared-core links"]
-    BEFORE --> ADOPT --> AFTER
-```
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/dashboard-home.png" width="760" alt="Dashboard home — hives, stray bees, and empty state">
+</div>
+
+Select a hive to see its bees, their current tasks, session costs, and the shared brain.
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/hive-overview.png" width="760" alt="Hive overview — bees, brain, costs">
+</div>
+
+Every bee keeps a permanent timeline — task claims, commits, sync alerts, milestones.
+
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/bee-timeline.png" width="760" alt="Bee timeline — commits, task claims, sync events">
+</div>
+
+PRs and commits attributed to each bee. File activity ranked by touches with read/write breakdown.
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%"><img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/bee-git.png" alt="Git & PRs tab"></td>
+      <td width="50%"><img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/bee-files.png" alt="Files tab — touch activity"></td>
+    </tr>
+    <tr>
+      <td align="center"><sub><b>Git &amp; PRs</b></sub></td>
+      <td align="center"><sub><b>File activity</b></sub></td>
+    </tr>
+  </table>
+</div>
+
+The journal logs significant completions across all bees. Profile gives an AI-generated overview of the hive.
+
+<div align="center">
+  <table>
+    <tr>
+      <td width="50%"><img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/journal.png" alt="Journal — work log"></td>
+      <td width="50%"><img src="https://raw.githubusercontent.com/Osama-Yusuf/fleet/main/docs/screenshots/profile.png" alt="Profile — AI-generated hive overview"></td>
+    </tr>
+    <tr>
+      <td align="center"><sub><b>Journal</b></sub></td>
+      <td align="center"><sub><b>Profile</b></sub></td>
+    </tr>
+  </table>
+</div>
+
+<br>
 
 ## Commands
 
-### Core
+**Setup**
 
 ```bash
-fleet init [--name X] [--no-ai]       # Wrap dir as hive + bee1, auto-adopt siblings
-fleet spawn [-n N] [--branch B]       # Create new bee(s)
-fleet adopt <path>                    # Import external dir as next bee
+fleet init                    # Wrap current dir as hive + bee1
+fleet spawn                   # Create a new bee
+fleet adopt <path>            # Import an external dir as a bee
 ```
 
-### Manage
+**Day-to-day**
 
 ```bash
-fleet status                          # Show all bees and state
-fleet launch <bee> [--resume]         # Open terminal tab in bee
-fleet destroy <bee>                   # Remove a bee
+fleet status                  # Show all bees and their state
+fleet launch <bee>            # Open a terminal tab in a bee
+fleet destroy <bee>           # Remove a bee
 ```
 
-### Smart
+**Shared knowledge**
 
 ```bash
-fleet doctor                          # Health check (broken symlinks, drift)
-fleet eject <bee>                     # Move bee back to standalone dir
-fleet refresh                         # Re-generate AI profile
-fleet clean                           # Remove stale active registrations
-fleet journal                         # View work log
-fleet brain                           # Edit CLAUDE.md
-fleet scan                            # Discover hives and standalone stray bees
-fleet event <type> "<message>"        # Add to the current bee's permanent timeline
+fleet brain                   # Edit the shared CLAUDE.md
+fleet journal                 # View the work log
+fleet artifact <file>         # Share a file across all bees (dedup + merge)
 ```
 
-### Interactive
+**Health**
 
 ```bash
-fleet                                 # No args = interactive menu
+fleet doctor                  # Check for broken symlinks, drift
+fleet scan                    # Discover hives and stray bees
+fleet clean                   # Remove stale registrations
 ```
 
-## Bee Life
-
-Every bee has a permanent append-only history at `.fleet/bees/<bee>/events.jsonl`. Fleet automatically records task claims, task changes, releases, and structured journal entries. Git commits and Claude activity are derived at view time rather than duplicated into the log.
-
-Click a bee in the dashboard to open its life page:
-
-- **Timeline** — claims, milestones, completions, journal entries, decisions, discoveries, and commits
-- **Git & PRs** — commits and locally discoverable pull-request references
-- **Files** — committed and currently modified files ranked by touches
-- **Decisions** — durable decisions and discoveries
-- **Tools** — Claude tool usage attributed to that bee
-- **Sessions** — account, activity window, message count, and tools per Claude session
-
-Record meaningful events from inside a bee:
+**History**
 
 ```bash
-fleet event milestone "Finished the API and started UI integration"
-fleet event decision "Use append-only JSONL so history is auditable"
-fleet event discovery "Local configuration overrides the shared default"
-fleet event blocker "Waiting for credentials to verify deployment"
-fleet event test "npm test — 21 passed"
-fleet event complete "Shipped the bee life page"
+fleet event milestone "msg"   # Record to bee's permanent timeline
+fleet event decision "msg"    # Log a decision
+fleet event discovery "msg"   # Log a finding
 ```
 
-Fleet intentionally avoids logging every prompt or raw response by default.
+> [!TIP]
+> Run `fleet` with no args for an interactive menu.
 
-## Find Stray Bees
+<br>
 
-Configure one or more parent directories, then scan them:
+## Coordination
+
+When you `fleet init`, a coordination protocol is injected into `CLAUDE.md`. Each Claude session is told to:
+
+1. **Claim** — write what it's working on to `.fleet/active/<bee>.md`
+2. **Check** — read other bees' claims before starting work
+3. **Update** — keep the brain current when discovering something new
+4. **Log** — append to `.fleet/journal.md` on meaningful completions
+
+The dashboard reads these files to show real-time status. No server process needed for coordination — it's just files.
+
+<br>
+
+## Smart artifacts
+
+`fleet artifact <file>` does more than copy a file to a shared folder:
+
+1. Scans all bees for the same filename
+2. If identical everywhere — deduplicates, keeps one copy
+3. If different across bees — backs up each version, merges them with Claude, puts the result in `artifacts/`
+4. Deletes originals from all bees, symlinks `artifacts/` to every bee
+
+<br>
+
+## Stray detection
 
 ```bash
 fleet config scan-path ~/repos
 fleet scan
 ```
 
-Fleet registers hives it finds and separately reports standalone project directories that contain Git, `CLAUDE.md`, `.claude`, or known Claude sessions. It also maps running Claude CLI processes to their working directories: **Active** means the CLI is open, whether busy or waiting for input; **Asleep** means resumable session history exists but no CLI process is running. Nothing is moved or converted until you explicitly initialize or adopt it.
+Fleet discovers standalone Claude workspaces across your machine.
 
-## Coordination Protocol
+- **Active** — a Claude CLI process is running
+- **Asleep** — session history exists but nothing's running
 
-`fleet init` injects a "Session Coordination" section into CLAUDE.md that tells each Claude session to:
+You can adopt strays into a hive or leave them standalone.
 
-1. **Register** — write `.fleet/active/<bee>.md` with current task
-2. **Check** — read other bees' active files before starting work
-3. **Update** — keep the brain current when discovering new info
-4. **Log** — append to `.fleet/journal.md` on significant completion
+<br>
 
-## Design Decisions
+## How it differs
 
-### Why full clones instead of Git worktrees?
+Fleet is not an agent framework. It doesn't run agents, define personas, require API keys, or need a database.
 
-Experienced Git users will immediately ask: "Why not `git worktree add` instead of cloning N times?" Fleet deliberately uses full clones for two reasons:
+| | **fleetode** | orchestration tools |
+|---|---|---|
+| **What it does** | Manages your existing Claude Code sessions | Runs its own agents |
+| **Setup** | `npm i -g` and go | API keys, config, database |
+| **Dependencies** | Zero (bash + node) | Express, SQLite, JWT, etc. |
+| **Dashboard** | Real session data (costs, commits, tools) | Task queues and agent status |
+| **Architecture** | Files and symlinks | Client-server with auth |
 
-1. **Same branch on multiple bees.** Git worktrees forbid checking out the same branch in two worktrees simultaneously. Fleet regularly runs multiple bees on `main` — one reviewing, one fixing, one exploring.
+<br>
 
-2. **Independent remotes.** A worktree shares `.git` with the main tree. You can't point bee1 at `origin` and bee2 at a fork. Clones give each bee its own remote configuration.
+## Requirements
 
-When spawning from a local bee (the common case), `git clone` defaults to `--local`, which hardlinks `.git/objects` from the source rather than copying them. Git objects are immutable and gc writes new packfiles rather than mutating existing ones, so hardlinks stay safe — deleting or garbage-collecting any bee never affects its siblings. Each bee gets a fully independent working tree and ref namespace with minimal disk overhead.
+| | Version | Install |
+|---|---|---|
+| **Node.js** | 18+ | [nodejs.org](https://nodejs.org) |
+| **jq** | any | `brew install jq` · `apt install jq` |
+| **claude** | any | [Claude Code](https://claude.com/claude-code) |
 
-Fleet deliberately avoids `--shared` (alternates) because it creates a dependency chain: if the source repo is deleted or gc'd, every clone pointing at it via alternates becomes corrupted. Hardlinks provide the same disk savings without the coupling.
+<br>
 
-### Why copies instead of symlinks for Claude project dirs?
+## Development
 
-Each bee gets a **copy** of the Claude project directory (`~/.claude/projects/...`), not a symlink. Symlinks caused session state from one bee to leak into another — Claude would resume a different bee's conversation. Copies ensure full session isolation while preserving the session history from the source bee at the time of creation.
+```bash
+git clone https://github.com/Osama-Yusuf/fleet.git
+cd fleet
+npm link              # makes `fleet` available globally from this repo
+npm test              # run tests
+```
 
-## License
+> [!NOTE]
+> Changes to `bin/fleet`, `lib/server.js`, `lib/dashboard.html`, or `lib/bee-life.js` take effect immediately — no build step.
 
-MIT
+<br>
+
+<div align="center">
+
+**MIT** © [Osama Yusuf](https://github.com/Osama-Yusuf)
+
+<sub>If fleetode saves you a merge conflict, consider starring the repo ⭐</sub>
+
+</div>

@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+
+  <!-- background -->
+  <circle cx="256" cy="256" r="248" fill="#1A1814"/>
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#F0A840" stroke-width="3" opacity=".3"/>
+
+  <!-- honeycomb: 7 pointy-top cells, R=49 (w=84, h=98)
+       row spacing = 3R/2 = 74, column spacing = 84, rows offset by 42
+       centers: TL(214,133) TR(298,133) | L(172,207) C(256,207) R(340,207) | BL(214,281) BR(298,281)
+       grid spans y 84..330, so its center is (256,207) -> translate(0,49) centers it in the circle -->
+  <g transform="translate(0,49)">
+
+  <!-- subtle glow behind occupied cells only -->
+  <path d="M256 158 L298 182 L298 232 L256 256 L214 232 L214 182 Z" fill="#F0A840" opacity=".07"/>
+  <path d="M214 84 L256 108 L256 158 L214 182 L172 158 L172 108 Z" fill="#F0A840" opacity=".05"/>
+  <path d="M298 84 L340 108 L340 158 L298 182 L256 158 L256 108 Z" fill="#F0A840" opacity=".05"/>
+
+  <!-- empty cells: room for `fleet spawn` -->
+  <g fill="none" stroke="#F0A840" stroke-width="3.5" opacity=".35">
+    <path d="M172 158 L214 182 L214 232 L172 256 L130 232 L130 182 Z"/>
+    <path d="M340 158 L382 182 L382 232 L340 256 L298 232 L298 182 Z"/>
+    <path d="M214 232 L256 256 L256 306 L214 330 L172 306 L172 256 Z"/>
+    <path d="M298 232 L340 256 L340 306 L298 330 L256 306 L256 256 Z"/>
+  </g>
+
+  <!-- occupied cells -->
+  <path d="M214 84 L256 108 L256 158 L214 182 L172 158 L172 108 Z" fill="none" stroke="#F0A840" stroke-width="4" opacity=".65"/>
+  <path d="M298 84 L340 108 L340 158 L298 182 L256 158 L256 108 Z" fill="none" stroke="#F0A840" stroke-width="4" opacity=".65"/>
+  <path d="M256 158 L298 182 L298 232 L256 256 L214 232 L214 182 Z" fill="none" stroke="#F0A840" stroke-width="4.5" opacity=".9"/>
+
+  <!-- === BEE at center cell (256, 207) === -->
+  <g transform="translate(256,207)">
+    <!-- wings (behind body) -->
+    <ellipse cx="-16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(-18 -16 -8)"/>
+    <ellipse cx="16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(18 16 -8)"/>
+    <!-- abdomen -->
+    <ellipse cx="0" cy="4" rx="17" ry="21" fill="#F0A840"/>
+    <!-- stripes -->
+    <g stroke="#1A1814" stroke-width="4" stroke-linecap="round">
+      <line x1="-11.5" y1="-4" x2="11.5" y2="-4"/>
+      <line x1="-13" y1="4" x2="13" y2="4"/>
+      <line x1="-11.5" y1="12" x2="11.5" y2="12"/>
+    </g>
+    <!-- head -->
+    <circle cx="0" cy="-19" r="9" fill="#2A2622"/>
+    <!-- antennae -->
+    <g stroke="#2A2622" stroke-width="2.6" stroke-linecap="round">
+      <line x1="-4" y1="-26" x2="-10" y2="-35"/>
+      <line x1="4" y1="-26" x2="10" y2="-35"/>
+    </g>
+    <circle cx="-10" cy="-36" r="3" fill="#F0A840"/>
+    <circle cx="10" cy="-36" r="3" fill="#F0A840"/>
+    <!-- stinger -->
+    <line x1="0" y1="25" x2="0" y2="31" stroke="#F0A840" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- === BEE at top-left cell (214, 133) === -->
+  <g transform="translate(214,133) scale(.72)">
+    <ellipse cx="-16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(-18 -16 -8)"/>
+    <ellipse cx="16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(18 16 -8)"/>
+    <ellipse cx="0" cy="4" rx="17" ry="21" fill="#F0A840"/>
+    <g stroke="#1A1814" stroke-width="4" stroke-linecap="round">
+      <line x1="-11.5" y1="-4" x2="11.5" y2="-4"/>
+      <line x1="-13" y1="4" x2="13" y2="4"/>
+      <line x1="-11.5" y1="12" x2="11.5" y2="12"/>
+    </g>
+    <circle cx="0" cy="-19" r="9" fill="#2A2622"/>
+    <g stroke="#2A2622" stroke-width="2.6" stroke-linecap="round">
+      <line x1="-4" y1="-26" x2="-10" y2="-35"/>
+      <line x1="4" y1="-26" x2="10" y2="-35"/>
+    </g>
+    <circle cx="-10" cy="-36" r="3" fill="#F0A840"/>
+    <circle cx="10" cy="-36" r="3" fill="#F0A840"/>
+  </g>
+
+  <!-- === BEE at top-right cell (298, 133) === -->
+  <g transform="translate(298,133) scale(.72)">
+    <ellipse cx="-16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(-18 -16 -8)"/>
+    <ellipse cx="16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(18 16 -8)"/>
+    <ellipse cx="0" cy="4" rx="17" ry="21" fill="#F0A840"/>
+    <g stroke="#1A1814" stroke-width="4" stroke-linecap="round">
+      <line x1="-11.5" y1="-4" x2="11.5" y2="-4"/>
+      <line x1="-13" y1="4" x2="13" y2="4"/>
+      <line x1="-11.5" y1="12" x2="11.5" y2="12"/>
+    </g>
+    <circle cx="0" cy="-19" r="9" fill="#2A2622"/>
+    <g stroke="#2A2622" stroke-width="2.6" stroke-linecap="round">
+      <line x1="-4" y1="-26" x2="-10" y2="-35"/>
+      <line x1="4" y1="-26" x2="10" y2="-35"/>
+    </g>
+    <circle cx="-10" cy="-36" r="3" fill="#F0A840"/>
+    <circle cx="10" cy="-36" r="3" fill="#F0A840"/>
+  </g>
+
+  </g><!-- end honeycomb+bees group -->
+
+  <!-- code brackets -->
+  <path d="M100 160 L50 256 L100 352" fill="none" stroke="#F0A840" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M412 160 L462 256 L412 352" fill="none" stroke="#F0A840" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
