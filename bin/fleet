@@ -37,7 +37,14 @@ find_hive() {
   local dir="$PWD"
   while [[ "$dir" != "/" ]]; do
     if [[ -f "$dir/.fleet/fleet.json" ]]; then
-      echo "$dir"
+      # If .fleet is a symlink, resolve to the real hive root
+      if [[ -L "$dir/.fleet" ]]; then
+        local real_fleet
+        real_fleet=$(cd "$dir" && cd -P .fleet 2>/dev/null && pwd)
+        echo "$(dirname "$real_fleet")"
+      else
+        echo "$dir"
+      fi
       return 0
     fi
     dir=$(dirname "$dir")
@@ -67,10 +74,8 @@ wire_symlinks() {
   ln -sf ../.claude "$bee/.claude"
   ln -sf ../.fleet "$bee/.fleet"
 
-  if [[ "$type" == "brain" ]]; then
-    [[ -d "$hive/artifacts" ]] && ln -sf ../artifacts "$bee/artifacts"
-    [[ -d "$hive/backups" ]]   && ln -sf ../backups "$bee/backups"
-  fi
+  [[ -d "$hive/artifacts" ]] && [[ ! -L "$bee/artifacts" ]] && ln -sf ../artifacts "$bee/artifacts"
+  [[ -d "$hive/backups" ]]   && [[ ! -L "$bee/backups" ]]  && ln -sf ../backups "$bee/backups"
 }
 
 gitignore_add() {
@@ -1038,44 +1043,176 @@ cmd_artifact() {
   fi
 
   local art_dir="$hive/artifacts"
-  mkdir -p "$art_dir"
+  local bak_dir="$hive/backups"
+  mkdir -p "$art_dir" "$bak_dir"
 
-  local copied=0
+  local shared=0
   for src in "$@"; do
-    if [[ ! -e "$src" ]]; then
-      local resolved=""
+    # Resolve src: could be relative to CWD or just a filename to find in bees
+    local src_path=""
+    if [[ -e "$src" ]]; then
+      src_path="$(cd "$(dirname "$src")" && pwd)/$(basename "$src")"
+    else
       for b in "$hive"/bee*; do
         [[ -d "$b" ]] || continue
         if [[ -e "$b/$src" ]]; then
-          resolved="$b/$src"
+          src_path="$b/$src"
           break
         fi
       done
-      if [[ -z "$resolved" ]]; then
-        warn "Not found: $src"
-        continue
-      fi
-      src="$resolved"
+    fi
+    if [[ -z "$src_path" ]]; then
+      warn "Not found: $src"
+      continue
     fi
 
     local name
-    name=$(basename "$src")
+    name=$(basename "$src_path")
+
     if [[ -e "$art_dir/$name" ]]; then
       warn "Already exists: artifacts/$name (skipping)"
       continue
     fi
-    cp -r "$src" "$art_dir/$name"
-    ok "Shared: $name → artifacts/"
-    { ((copied++)) || true; }
+
+    # Scan all bees for the same file/dir
+    local -a found_in=()
+    for b in "$hive"/bee*; do
+      [[ -d "$b" ]] || continue
+      [[ -L "$b/$name" ]] && continue  # skip existing symlinks
+      [[ -e "$b/$name" ]] && found_in+=("$b")
+    done
+
+    if [[ ${#found_in[@]} -eq 0 ]]; then
+      warn "Not found in any bee: $name"
+      continue
+    fi
+
+    echo ""
+    info "Artifact: $name"
+    dim "  Found in ${#found_in[@]} bee(s): ${found_in[*]##*/}"
+
+    if [[ ${#found_in[@]} -eq 1 ]]; then
+      # Only in one bee — move directly
+      cp -r "${found_in[0]}/$name" "$art_dir/$name"
+      rm -rf "${found_in[0]}/$name"
+      ok "  Moved $name → artifacts/"
+
+    else
+      # In multiple bees — check if identical
+      local all_identical=true
+      local first="${found_in[0]}/$name"
+
+      for ((i=1; i<${#found_in[@]}; i++)); do
+        local other="${found_in[$i]}/$name"
+        if [[ -d "$first" ]]; then
+          # Directory comparison
+          if ! diff -rq "$first" "$other" >/dev/null 2>&1; then
+            all_identical=false
+            break
+          fi
+        else
+          # File comparison
+          if ! cmp -s "$first" "$other"; then
+            all_identical=false
+            break
+          fi
+        fi
+      done
+
+      if $all_identical; then
+        dim "  All copies are identical"
+        cp -r "$first" "$art_dir/$name"
+        for b in "${found_in[@]}"; do
+          rm -rf "$b/$name"
+        done
+        ok "  Moved $name → artifacts/ (deleted ${#found_in[@]} identical copies)"
+
+      else
+        warn "  Copies differ across bees — merging"
+
+        # Back up each version with bee name suffix
+        local ext="${name##*.}"
+        local base="${name%.*}"
+        [[ "$ext" == "$name" ]] && ext=""  # no extension
+
+        for b in "${found_in[@]}"; do
+          local bname
+          bname=$(basename "$b")
+          local bak_name
+          if [[ -n "$ext" ]]; then
+            bak_name="${base}-${bname}.${ext}"
+          else
+            bak_name="${base}-${bname}"
+          fi
+          cp -r "$b/$name" "$bak_dir/$bak_name"
+          dim "  Backed up: backups/$bak_name"
+        done
+
+        # Merge with claude (non-interactive)
+        if [[ -d "$first" ]]; then
+          # For directories, just take the newest and warn
+          warn "  Directory merge not supported — using newest copy"
+          local newest=""
+          local newest_time=0
+          for b in "${found_in[@]}"; do
+            local mtime
+            mtime=$(stat -f %m "$b/$name" 2>/dev/null || stat -c %Y "$b/$name" 2>/dev/null || echo 0)
+            if [[ $mtime -gt $newest_time ]]; then
+              newest="$b/$name"
+              newest_time=$mtime
+            fi
+          done
+          cp -r "$newest" "$art_dir/$name"
+        else
+          # Build a merge prompt with all versions
+          local merge_prompt="You are a file merge tool. Merge these ${#found_in[@]} versions of '$name' into one document. Keep all unique content from every version. Output ONLY the raw merged file content — no markdown fences, no commentary, no preamble, no explanation. Your entire response will be saved directly as the file.\n\n"
+          for b in "${found_in[@]}"; do
+            local bname
+            bname=$(basename "$b")
+            merge_prompt+="=== Version from $bname ===\n"
+            merge_prompt+="$(cat "$b/$name")\n\n"
+          done
+
+          dim "  Merging with Claude..."
+          local merged
+          if merged=$(printf '%b' "$merge_prompt" | claude -p --model haiku --allowedTools "" 2>/dev/null); then
+            printf '%s' "$merged" > "$art_dir/$name"
+            ok "  Merged $name → artifacts/"
+          else
+            warn "  Claude merge failed — using newest copy as fallback"
+            local newest=""
+            local newest_time=0
+            for b in "${found_in[@]}"; do
+              local mtime
+              mtime=$(stat -f %m "$b/$name" 2>/dev/null || stat -c %Y "$b/$name" 2>/dev/null || echo 0)
+              if [[ $mtime -gt $newest_time ]]; then
+                newest="$b/$name"
+                newest_time=$mtime
+              fi
+            done
+            cp -r "$newest" "$art_dir/$name"
+          fi
+        fi
+
+        # Delete from all bees
+        for b in "${found_in[@]}"; do
+          rm -rf "$b/$name"
+        done
+        ok "  Cleaned up ${#found_in[@]} bee copies"
+      fi
+    fi
+    { ((shared++)) || true; }
   done
 
-  if [[ $copied -gt 0 ]]; then
+  # Ensure artifacts/ is symlinked into all bees
+  if [[ $shared -gt 0 ]]; then
     for b in "$hive"/bee*; do
       [[ -d "$b" ]] || continue
       [[ -L "$b/artifacts" ]] && continue
       ln -sf ../artifacts "$b/artifacts"
     done
-    ok "Shared $copied artifact(s)"
+    echo ""
+    ok "Shared $shared artifact(s) — symlinked to all bees"
   fi
 }
 
