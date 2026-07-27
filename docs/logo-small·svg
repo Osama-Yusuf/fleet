@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Simplified mark for small sizes (favicon, 16-48px).
+       One cell, one bee, brackets pulled in and thickened. -->
+
+  <circle cx="256" cy="256" r="248" fill="#1A1814"/>
+
+  <!-- single cell, R=110 -->
+  <path d="M256 146 L351 201 L351 311 L256 366 L161 311 L161 201 Z" fill="#F0A840" opacity=".08"/>
+  <path d="M256 146 L351 201 L351 311 L256 366 L161 311 L161 201 Z" fill="none" stroke="#F0A840" stroke-width="11"/>
+
+  <!-- bee, scaled 2.2x -->
+  <g transform="translate(256,256) scale(2.2)">
+    <ellipse cx="-16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(-18 -16 -8)"/>
+    <ellipse cx="16" cy="-8" rx="15" ry="9" fill="#4A4640" transform="rotate(18 16 -8)"/>
+    <ellipse cx="0" cy="4" rx="17" ry="21" fill="#F0A840"/>
+    <g stroke="#1A1814" stroke-width="4.5" stroke-linecap="round">
+      <line x1="-11.5" y1="-4" x2="11.5" y2="-4"/>
+      <line x1="-13" y1="4" x2="13" y2="4"/>
+      <line x1="-11.5" y1="12" x2="11.5" y2="12"/>
+    </g>
+    <circle cx="0" cy="-19" r="9" fill="#2A2622"/>
+    <g stroke="#2A2622" stroke-width="3" stroke-linecap="round">
+      <line x1="-4" y1="-26" x2="-10" y2="-35"/>
+      <line x1="4" y1="-26" x2="10" y2="-35"/>
+    </g>
+    <circle cx="-10" cy="-36" r="3.5" fill="#F0A840"/>
+    <circle cx="10" cy="-36" r="3.5" fill="#F0A840"/>
+  </g>
+
+  <!-- brackets -->
+  <path d="M116 168 L66 256 L116 344" fill="none" stroke="#F0A840" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M396 168 L446 256 L396 344" fill="none" stroke="#F0A840" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

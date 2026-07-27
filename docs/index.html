@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Fleet is a multi-session Claude Code CLI manager: one shared brain, many isolated sessions.">
-<title>fleet</title>
+<title>fleetode</title>
 <style>
 /* ── Tokens ── */
 :root {
@@ -982,11 +982,12 @@ html, body { background-color: var(--bg); color: var(--text); }
 
   <!-- ════ Hero ════ -->
   <section class="hero">
+    <img src="logo.svg" width="120" height="120" alt="fleetode" style="margin-bottom:1.2rem">
     <div class="prompt">
       <span class="prompt-char">$</span>fleet<span class="cursor"></span>
     </div>
     <p class="tagline">One brain, many sessions.</p>
-    <p class="subtitle">Multi-session Claude Code CLI manager</p>
+    <p class="subtitle">Manage multiple Claude Code sessions on the same project</p>
   </section>
 
   <!-- ════ Why ════ -->
@@ -994,29 +995,29 @@ html, body { background-color: var(--bg); color: var(--text); }
     <h2 class="section-label">The problem</h2>
     <div class="why-cards">
       <div class="why-card">
-        <div class="why-icon why-icon--die" aria-hidden="true">&times;</div>
-        <h3>Sessions die</h3>
-        <p>Restart your machine, lose your Claude sessions. Context and momentum evaporate.</p>
-      </div>
-      <div class="why-card">
-        <div class="why-icon why-icon--boot" aria-hidden="true">+</div>
-        <h3>Sessions take setup</h3>
-        <p>A fresh Claude workspace means copying code, restoring trust and permissions, and finding the right context again.</p>
-      </div>
-      <div class="why-card">
         <div class="why-icon why-icon--frag" aria-hidden="true">&divide;</div>
-        <h3>Brains fragment</h3>
-        <p>Each session builds its own CLAUDE.md. Knowledge never converges into one place.</p>
+        <h3>Brain drift</h3>
+        <p>Each session builds its own CLAUDE.md. Discoveries in one never reach the others. Three slightly different versions of the truth.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon why-icon--die" aria-hidden="true">&times;</div>
+        <h3>Stale branches</h3>
+        <p>One session pushes to main, the rest keep working on an outdated base. Nobody notices until the merge conflicts hit.</p>
       </div>
       <div class="why-card">
         <div class="why-icon why-icon--iso" aria-hidden="true">&#x2225;</div>
-        <h3>No coordination</h3>
-        <p>Parallel sessions can't see each other. Duplicated effort, conflicting changes.</p>
+        <h3>Blind coordination</h3>
+        <p>Sessions don't know what each other is doing. Two refactor the same module. One overwrites the other's work.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon why-icon--boot" aria-hidden="true">+</div>
+        <h3>Session setup tax</h3>
+        <p>Every new session means copying the project, restoring trust and permissions, re-establishing context. It adds up.</p>
       </div>
       <div class="why-card">
         <div class="why-icon why-icon--frag" aria-hidden="true">?</div>
-        <h3>Workspaces go stray</h3>
-        <p>Standalone Claude projects pile up across your repos with no clear view of which sessions belong together.</p>
+        <h3>No overview</h3>
+        <p>Costs, progress, what's running, what's idle. You'd have to check each session individually to piece it together.</p>
       </div>
     </div>
   </section>
@@ -1291,7 +1292,7 @@ html, body { background-color: var(--bg); color: var(--text); }
   <section class="section">
     <h2 class="section-label">Install</h2>
     <div class="install">
-      <code class="install-cmd"><span class="ic-dollar">$</span>npm i -g claude-fleet</code>
+      <code class="install-cmd"><span class="ic-dollar">$</span>npm i -g fleetode</code>
     </div>
   </section>
 
