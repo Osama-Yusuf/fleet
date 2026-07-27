@@ -153,10 +153,10 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 .sidebar-empty{font-size:.75rem;color:var(--text3);padding:14px;text-align:center;line-height:1.65}
 .sidebar-bottom{padding:10px 12px;box-shadow:inset 0 1px 0 var(--border)}
 .sidebar-search{position:relative}
-.sidebar-search input{width:100%;padding:7px 10px 7px 28px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:.75rem;outline:none;transition:border-color 140ms,box-shadow 140ms}
+.sidebar-search input{width:100%;padding:7px 10px 7px 28px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg) no-repeat 8px center/14px 14px;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' stroke='%23777' stroke-width='1.6' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='6.5' cy='6.5' r='4.8'/%3E%3Cline x1='10' y1='10' x2='14' y2='14'/%3E%3C/svg%3E");color:var(--text);font-family:var(--mono);font-size:.75rem;outline:none;transition:border-color 140ms,box-shadow 140ms}
 .sidebar-search input:focus{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-bg)}
 .sidebar-search input::placeholder{color:var(--text3)}
-.sidebar-search svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text3);pointer-events:none}
+.sidebar-search svg{display:none}
 .sidebar-search .search-clear{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:20px;height:20px;border:none;background:none;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);font-size:.8rem;padding:0}
 .sidebar-search .search-clear:hover{color:var(--text);background:var(--accent-bg)}
 
@@ -542,6 +542,77 @@ input[type="text"]::placeholder{color:var(--text3)}
   .stat-card{min-width:80px;flex:1}
   .content{padding:16px}
 }
+
+/* ── search overlay ── */
+.search-trigger{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:var(--r);border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--mono);font-size:.7rem;transition:all 140ms;margin-right:4px}
+.search-trigger:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.search-trigger svg{display:block}
+.search-trigger kbd{font-size:.5625rem;background:var(--bg);padding:1px 5px;border-radius:3px;border:1px solid var(--border);color:var(--text3)}
+.search-trigger-label{display:none}
+@media(min-width:600px){.search-trigger-label{display:inline}}
+
+.search-overlay{position:fixed;inset:0;background:rgba(10,8,6,.62);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);z-index:250;display:flex;align-items:flex-start;justify-content:center;padding:min(12vh,100px) 16px 16px;opacity:0;pointer-events:none;transition:opacity 180ms}
+.search-overlay.open{opacity:1;pointer-events:auto}
+.search-box{background:var(--raised);border-radius:var(--r-lg);box-shadow:var(--shadow-up);width:100%;max-width:620px;max-height:75vh;display:flex;flex-direction:column;transform:scale(.97) translateY(-8px);transition:transform 180ms;overflow:hidden}
+.search-overlay.open .search-box{transform:scale(1) translateY(0)}
+.search-header{padding:16px 16px 0}
+.search-input-wrap{position:relative;display:flex;align-items:center}
+.search-input-wrap>svg{display:none}
+.search-input{width:100%;padding:11px 12px 11px 38px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg) no-repeat 12px center/16px 16px;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' stroke='%23777' stroke-width='1.6' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='6.5' cy='6.5' r='4.8'/%3E%3Cline x1='10' y1='10' x2='14' y2='14'/%3E%3C/svg%3E");color:var(--text);font-family:var(--mono);font-size:.875rem;outline:none;transition:border-color 140ms}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--text3)}
+.search-chips{display:flex;gap:5px;flex-wrap:wrap;padding:10px 16px 8px;align-items:center}
+.search-chip-label{font-size:.5625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-right:4px}
+.search-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:.6875rem;font-family:var(--mono);font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text3);transition:all 140ms;user-select:none}
+.search-chip:hover{border-color:var(--text2);color:var(--text2)}
+.search-chip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.search-chip kbd{font-size:.5rem;color:var(--text3);background:var(--bg);padding:1px 4px;border-radius:3px;border:1px solid var(--border);font-family:var(--mono);margin-left:2px}
+.search-chip.on kbd{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.search-divider{height:1px;background:var(--border);flex-shrink:0}
+.search-results{flex:1;overflow-y:auto;padding:8px;min-height:120px}
+.search-group-header{display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:.5625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.search-group-count{font-family:var(--mono);color:var(--accent);background:var(--accent-bg);padding:0 6px;border-radius:999px}
+.search-result{padding:9px 12px;border-radius:var(--r);cursor:pointer;transition:background 120ms;margin:2px 0}
+.search-result:hover,.search-result.focused{background:var(--accent-bg)}
+.search-result-top{display:flex;align-items:center;gap:6px;margin-bottom:3px}
+.search-result-source{font-size:.5rem;text-transform:uppercase;letter-spacing:.06em;font-weight:700;padding:1px 6px;border-radius:999px;border:1px solid var(--border);color:var(--text3)}
+.search-result-source.events{color:#5FD49A;border-color:color-mix(in srgb,#5FD49A 35%,transparent)}
+.search-result-source.journal{color:#5891F5;border-color:color-mix(in srgb,#5891F5 35%,transparent)}
+.search-result-source.brain{color:#DFA765;border-color:color-mix(in srgb,#DFA765 35%,transparent)}
+.search-result-source.commits{color:#A855F7;border-color:color-mix(in srgb,#A855F7 35%,transparent)}
+.search-result-source.tasks{color:#06B6D4;border-color:color-mix(in srgb,#06B6D4 35%,transparent)}
+.search-result-source.diffs{color:#A855F7;border-color:color-mix(in srgb,#A855F7 35%,transparent)}
+.search-result-source.sessions{color:#EC7C9B;border-color:color-mix(in srgb,#EC7C9B 35%,transparent)}
+.search-result-source.prs{color:#5FD49A;border-color:color-mix(in srgb,#5FD49A 35%,transparent)}
+.search-result-source.files{color:#8A8070;border-color:color-mix(in srgb,#8A8070 35%,transparent)}
+.search-result-bee{font-size:.6rem;font-family:var(--mono);color:var(--text3)}
+.search-result-date{font-size:.6rem;font-family:var(--mono);color:var(--text3);margin-left:auto}
+.search-result-text{font-size:.8125rem;color:var(--text);line-height:1.55}
+.search-result-text mark{background:color-mix(in srgb,var(--accent) 25%,transparent);color:inherit;border-radius:2px;padding:0 1px}
+.search-result-context{font-size:.7rem;color:var(--text3);margin-top:3px;line-height:1.5;max-height:2.4em;overflow:hidden;font-family:var(--mono)}
+.search-meta{padding:6px 12px;font-size:.6875rem;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:8px}
+.search-meta-count{color:var(--accent)}
+.search-empty{padding:32px 16px;text-align:center;color:var(--text3)}
+.search-empty-title{font-family:var(--mono);font-size:.8125rem;font-weight:600;color:var(--text2);margin-bottom:8px}
+.search-empty-hint{font-size:.75rem;line-height:1.65}
+.search-empty-suggestions{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+.search-empty-sug{font-size:.6875rem;font-family:var(--mono);color:var(--accent);background:var(--accent-bg);padding:3px 10px;border-radius:999px;cursor:pointer;border:none;transition:background 120ms}
+.search-empty-sug:hover{background:color-mix(in srgb,var(--accent) 20%,transparent)}
+.search-history-header{display:flex;align-items:center;font-size:.5625rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;padding:6px 10px}
+.search-history-clear{font-size:.625rem;color:var(--text3);cursor:pointer;border:none;background:none;padding:3px 8px;border-radius:var(--r-sm);margin-left:auto;font-family:inherit}
+.search-history-clear:hover{color:var(--red);background:var(--red-bg)}
+.search-history-item{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--r);cursor:pointer;transition:background 120ms;font-size:.8125rem;color:var(--text2);font-family:var(--mono);width:100%;text-align:left;border:none;background:none}
+.search-history-item:hover{background:var(--accent-bg);color:var(--text)}
+.search-ask-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-top:4px;font-size:.75rem;color:var(--text3)}
+.search-ask-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:var(--r);font-size:.75rem;font-weight:600;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all 140ms;font-family:inherit}
+.search-ask-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.search-ask-btn:disabled{opacity:.5;cursor:not-allowed}
+.search-ask-response{padding:12px;margin:0 8px 8px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border);max-height:260px;overflow-y:auto}
+.search-ask-response .md-display{border:none;background:none;padding:0;max-height:none}
+.search-footer{display:flex;align-items:center;gap:12px;padding:8px 12px;border-top:1px solid var(--border);font-size:.625rem;color:var(--text3);flex-wrap:wrap;flex-shrink:0}
+.search-footer kbd{font-size:.5625rem;background:var(--bg);padding:1px 5px;border-radius:3px;border:1px solid var(--border);font-family:var(--mono);color:var(--text3)}
+.search-hit{background:var(--accent);color:var(--bg);padding:1px 2px;border-radius:3px;animation:hitFade 3s ease forwards}
+@keyframes hitFade{0%,60%{background:var(--accent);color:var(--bg)}100%{background:transparent;color:inherit}}
 </style>
 </head>
 <body>
@@ -683,6 +754,26 @@ input[type="text"]::placeholder{color:var(--text3)}
 
 <div class="toast-stack" id="toasts"></div>
 
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-box">
+    <div class="search-header">
+      <div class="search-input-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6.5" cy="6.5" r="4.8"/><line x1="10" y1="10" x2="14" y2="14"/></svg>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search across hive…" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="search-chips" id="searchChips"></div>
+    <div class="search-divider"></div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-footer">
+      <span><kbd>↑↓</kbd> navigate</span>
+      <span><kbd>↵</kbd> open</span>
+      <span><kbd>⌥D</kbd><kbd>⌥S</kbd><kbd>⌥P</kbd><kbd>⌥F</kbd> toggle sources</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
 <script>
 /* theme: system by default, click to cycle dark → light → system */
 (function(){
@@ -717,6 +808,20 @@ input[type="text"]::placeholder{color:var(--text3)}
 (function(){
   let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={};
   let openAcct=null, destroyBee=null, mdMode='rendered';
+
+  // search state
+  const SRCS=[
+    {key:'events',label:'Events',on:true},{key:'journal',label:'Journal',on:true},
+    {key:'brain',label:'Brain',on:true},{key:'commits',label:'Commits',on:true},
+    {key:'tasks',label:'Tasks',on:true},
+    {key:'diffs',label:'Diffs',kbd:'D',on:false},{key:'sessions',label:'Sessions',kbd:'S',on:false},
+    {key:'prs',label:'PRs',kbd:'P',on:false},{key:'files',label:'Files',kbd:'F',on:false}
+  ];
+  let srcSet=new Set(SRCS.filter(s=>s.on).map(s=>s.key));
+  let sResults=[],sFocus=-1,sDebounce=null,askResp=null,askBusy=false;
+  let sHistory=[];try{sHistory=JSON.parse(localStorage.getItem('fleet-search-history')||'[]');}catch{}
+  let _hitQuery=null,_hitTimer=null;
+  const _intervals=[];
 
   const $=id=>document.getElementById(id);
 
@@ -810,7 +915,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   // ── Accounts ──
   function renderPills(){
-    $('pills').innerHTML=accounts.map((a,i)=>{
+    $('pills').innerHTML='<button class="search-trigger" onclick="window._openSearch()" title="Search hive (⌘K)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="width:13px;height:13px"><circle cx="6.5" cy="6.5" r="4.8"/><line x1="10" y1="10" x2="14" y2="14"/></svg><span class="search-trigger-label">Search</span><kbd>⌘K</kbd></button>'+accounts.map((a,i)=>{
       const cnt=a.stats?(a.stats.totalMessages||a.stats.totalSessions||0):0;
       const cls=openAcct===i?' open':'';
       return `<button class="pill${cls}" onclick="window._toggleAcct(${i})"><span class="pill-dot" style="background:${ACCT_C[i%ACCT_C.length]}"></span>${esc(a.name)}<span class="pill-count tabnum">${fmtNum(cnt)}</span></button>`;
@@ -1489,7 +1594,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     activeTab=t;
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.textContent.trim().toLowerCase()===t));
     document.querySelectorAll('.tab-content').forEach(p=>p.classList.toggle('active',p.dataset.tab===t));
-    loadTab(t);
+    return loadTab(t);
   };
 
   window._toggleBee=function(card,e){
@@ -1746,6 +1851,189 @@ input[type="text"]::placeholder{color:var(--text3)}
     }
   };
 
+  // ── Search ──
+  function searchOpen(){return $('searchOverlay').classList.contains('open');}
+  window._openSearch=function(){
+    if(!sel){toast('Select a hive first','info');return;}
+    $('searchOverlay').classList.add('open');
+    $('searchInput').value='';sResults=[];sFocus=-1;askResp=null;askBusy=false;
+    renderSearchChips();renderSearchEmpty();
+    setTimeout(()=>$('searchInput').focus(),100);
+  };
+  function closeSearch(){$('searchOverlay').classList.remove('open');}
+
+  function renderSearchChips(){
+    $('searchChips').innerHTML='<span class="search-chip-label">Sources</span>'+
+      SRCS.map(s=>`<button class="search-chip${srcSet.has(s.key)?' on':''}" onclick="window._togSrc('${s.key}')">${s.label}${s.kbd?`<kbd>${s.kbd}</kbd>`:''}</button>`).join('');
+  }
+  window._togSrc=function(k){
+    if(srcSet.has(k))srcSet.delete(k);else srcSet.add(k);
+    renderSearchChips();triggerSearch();
+  };
+
+  function triggerSearch(){
+    clearTimeout(sDebounce);
+    const q=$('searchInput').value.trim();
+    if(!q){renderSearchEmpty();return;}
+    sDebounce=setTimeout(()=>doHiveSearch(q),300);
+  }
+
+  async function doHiveSearch(q){
+    if(!sel||!q)return;
+    try{
+      const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/search?q=${encodeURIComponent(q)}&sources=${[...srcSet].join(',')}`);
+      sResults=d.results||[];sFocus=-1;askResp=null;
+      renderSearchResults(q);
+      sHistory=[q,...sHistory.filter(h=>h!==q)].slice(0,20);
+      try{localStorage.setItem('fleet-search-history',JSON.stringify(sHistory));}catch{}
+    }catch(e){toast('Search failed','err');}
+  }
+
+  function renderSearchEmpty(){
+    let h='';
+    if(sHistory.length){
+      h+='<div style="padding:8px"><div class="search-history-header">Recent searches <button class="search-history-clear" onclick="window._clearSHistory()">Clear</button></div>';
+      for(const q of sHistory.slice(0,8))h+=`<button class="search-history-item" onclick="window._sFromHistory('${esc(q)}')"><span style="color:var(--text3);font-size:.7rem">↩</span>${esc(q)}</button>`;
+      h+='</div>';
+    }
+    h+=`<div class="search-empty"><div class="search-empty-title">Search across your hive</div>
+      <div class="search-empty-hint">Find events, journal entries, commits, decisions, and more.</div>
+      <div class="search-empty-suggestions">
+        <button class="search-empty-sug" onclick="window._sSug('decision')">decisions</button>
+        <button class="search-empty-sug" onclick="window._sSug('blocker')">blockers</button>
+        <button class="search-empty-sug" onclick="window._sSug('milestone')">milestones</button>
+        <button class="search-empty-sug" onclick="window._sSug('deploy')">deploy</button>
+      </div></div>`;
+    $('searchResults').innerHTML=h;
+  }
+  window._clearSHistory=function(){sHistory=[];try{localStorage.removeItem('fleet-search-history');}catch{}renderSearchEmpty();};
+  window._sFromHistory=function(q){$('searchInput').value=q;triggerSearch();};
+  window._sSug=function(q){$('searchInput').value=q;$('searchInput').focus();triggerSearch();};
+
+  function hlText(text,query){
+    if(!text||!query)return esc(text);
+    const e=esc(text),qe=esc(query);
+    return e.replace(new RegExp(`(${qe.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`,'gi'),'<mark>$1</mark>');
+  }
+
+  function renderSearchResults(query){
+    if(!sResults.length){
+      $('searchResults').innerHTML=`<div class="search-empty"><div class="search-empty-title">No results found</div>
+        <div class="search-empty-hint">Try different keywords or enable more sources.</div></div>`+renderAskBar(query);
+      return;
+    }
+    const groups={};
+    for(const r of sResults){if(!groups[r.source])groups[r.source]=[];groups[r.source].push(r);}
+    let h=`<div class="search-meta"><span class="search-meta-count">${sResults.length} result${sResults.length!==1?'s':''}</span> across ${Object.keys(groups).length} source${Object.keys(groups).length!==1?'s':''}</div>`;
+    let gi=0;
+    for(const[source,items]of Object.entries(groups)){
+      const sd=SRCS.find(s=>s.key===source)||{label:source};
+      h+=`<div class="search-group-header"><span>${sd.label}</span><span class="search-group-count">${items.length}</span></div>`;
+      for(const r of items){
+        h+=`<div class="search-result${gi===sFocus?' focused':''}" data-idx="${gi}" onclick="window._openSResult(${gi})">
+          <div class="search-result-top">
+            <span class="search-result-source ${source}">${source}</span>
+            ${r.bee?`<span class="search-result-bee">${esc(r.bee)}</span>`:''}
+            ${r.type?`<span class="search-result-bee">${esc(String(r.type).replace(/_/g,' '))}</span>`:''}
+            ${r.date?`<span class="search-result-date">${new Date(r.date).toLocaleDateString()}</span>`:''}
+          </div>
+          <div class="search-result-text">${hlText(r.text,query)}</div>
+          ${r.context&&r.context!==r.text?`<div class="search-result-context">${esc(r.context.slice(0,150))}</div>`:''}
+        </div>`;
+        gi++;
+      }
+    }
+    h+=renderAskBar(query);
+    $('searchResults').innerHTML=h;
+  }
+
+  function renderAskBar(query){
+    let h=`<div class="search-ask-bar">
+      ${sResults.length<3?'<span>Not finding what you need?</span>':'<span>Need deeper analysis?</span>'}
+      <button class="search-ask-btn" onclick="window._askClaude()" ${askBusy?'disabled':''}>${askBusy?'<span class="spinner"></span> Thinking…':'⚡ Ask Claude'}</button>
+    </div>`;
+    if(askResp)h+=`<div class="search-ask-response"><div class="md-display rendered">${renderMd(askResp)}</div></div>`;
+    return h;
+  }
+
+  window._askClaude=async function(){
+    if(!sel||askBusy)return;
+    const q=$('searchInput').value.trim();
+    if(!q)return;
+    askBusy=true;renderSearchResults(q);
+    try{
+      const res=await fetch(`/api/hives/${encodeURIComponent(sel.name)}/ask`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})});
+      const reader=res.body.getReader();
+      const dec=new TextDecoder();
+      askResp='';
+      while(true){
+        const{done,value}=await reader.read();
+        if(done)break;
+        askResp+=dec.decode(value,{stream:true});
+        renderSearchResults(q);
+      }
+    }catch(e){askResp='Error: Could not reach Claude. Make sure the `claude` CLI is installed.';}
+    askBusy=false;renderSearchResults(q);
+  };
+
+  function _applyHit(query,scroll){
+    const root=document.querySelector('.content');
+    if(!root||!query)return false;
+    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null);
+    const q=query.toLowerCase();
+    let node;
+    while(node=walker.nextNode()){
+      const idx=node.textContent.toLowerCase().indexOf(q);
+      if(idx===-1)continue;
+      const range=document.createRange();
+      range.setStart(node,idx);
+      range.setEnd(node,idx+query.length);
+      const span=document.createElement('span');
+      span.setAttribute('data-search-hit','1');
+      span.style.cssText='background:var(--accent);color:var(--bg);padding:1px 3px;border-radius:3px;';
+      range.surroundContents(span);
+      if(scroll)span.scrollIntoView({behavior:'smooth',block:'center'});
+      return true;
+    }
+    return false;
+  }
+  function _reHit(){if(_hitQuery)_applyHit(_hitQuery,false);}
+  function scrollToHit(query,container){
+    if(!query)return;
+    document.querySelectorAll('[data-search-hit]').forEach(el=>{
+      const p=el.parentNode;if(p){p.replaceChild(document.createTextNode(el.textContent),el);p.normalize();}
+    });
+    if(!_applyHit(query,true))return;
+    _intervals.forEach(id=>clearInterval(id));
+    _intervals.length=0;
+    clearTimeout(_hitTimer);
+    _hitTimer=setTimeout(()=>{
+      document.querySelectorAll('[data-search-hit]').forEach(el=>{
+        const p=el.parentNode;if(p){p.replaceChild(document.createTextNode(el.textContent),el);p.normalize();}
+      });
+      _intervals.push(setInterval(refreshHives,10000));
+      _intervals.push(setInterval(refreshStrays,30000));
+      _intervals.push(setInterval(refreshAccounts,10000));
+      _intervals.push(setInterval(refreshBeeLife,15000));
+    },4000);
+  }
+
+  window._openSResult=function(idx){
+    const r=sResults[idx];if(!r)return;
+    const q=$('searchInput').value.trim();
+    closeSearch();
+    if(r.bee&&sel){
+      window._openBee(r.bee).then(()=>{
+        if(r.source==='events'||r.source==='tasks')window._beeTab('timeline');
+        else if(r.source==='commits'||r.source==='diffs'||r.source==='prs')window._beeTab('git');
+        else if(r.source==='files')window._beeTab('files');
+        else if(r.source==='sessions')window._beeTab('sessions');
+        setTimeout(()=>scrollToHit(q),150);
+      });
+    }else if(r.source==='brain'){window._tab('brain').then(()=>setTimeout(()=>scrollToHit(q),100));}
+    else if(r.source==='journal'){window._tab('journal').then(()=>setTimeout(()=>scrollToHit(q),100));}
+  };
+
   // ── Mobile ──
   window.toggleSidebar=function(){$('sidebar').classList.toggle('open');};
 
@@ -1758,6 +2046,7 @@ input[type="text"]::placeholder{color:var(--text3)}
   });
 
   document.addEventListener('click',function(e){
+    if(e.target===$('searchOverlay'))closeSearch();
     ['createModal','spawnModal','adoptModal','destroyModal'].forEach(id=>{
       if(e.target===$(id)){
         if(id==='createModal')closeCreateModal();
@@ -1769,6 +2058,26 @@ input[type="text"]::placeholder{color:var(--text3)}
   });
 
   document.addEventListener('keydown',function(e){
+    if(searchOpen()&&e.altKey&&!e.metaKey&&!e.ctrlKey){
+      const codeMap={KeyD:'diffs',KeyS:'sessions',KeyP:'prs',KeyF:'files'};
+      if(codeMap[e.code]){e.preventDefault();e.stopPropagation();window._togSrc(codeMap[e.code]);return;}
+    }
+  },true);
+
+  document.addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();window._openSearch();return;}
+    if(e.key==='/'&&!e.target.closest('input,textarea,[contenteditable]')&&!searchOpen()){e.preventDefault();window._openSearch();return;}
+
+    if(searchOpen()){
+      if(e.key==='Escape'){e.preventDefault();closeSearch();return;}
+      if(e.key==='ArrowDown'){e.preventDefault();sFocus=Math.min(sFocus+1,sResults.length-1);renderSearchResults($('searchInput').value.trim());
+        const f=document.querySelector('.search-result.focused');if(f)f.scrollIntoView({block:'nearest'});return;}
+      if(e.key==='ArrowUp'){e.preventDefault();sFocus=Math.max(sFocus-1,-1);renderSearchResults($('searchInput').value.trim());
+        const f=document.querySelector('.search-result.focused');if(f)f.scrollIntoView({block:'nearest'});return;}
+      if(e.key==='Enter'&&sFocus>=0){e.preventDefault();window._openSResult(sFocus);return;}
+      return;
+    }
+
     if(e.key==='Escape'){
       closeCreateModal();closeSpawnModal();closeAdoptModal();closeDestroyModal();
       if(openAcct!==null){$('acctPanel').classList.remove('open');openAcct=null;renderPills();}
@@ -1830,6 +2139,7 @@ input[type="text"]::placeholder{color:var(--text3)}
   async function init(){
     renderPills();
     await Promise.all([refreshHives(),refreshStrays(),refreshAccounts()]);
+    $('searchInput').addEventListener('input',triggerSearch);
     const hashParts=location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
     if(hashParts.length){
       const h=hives.find(x=>x.name===hashParts[0]);
@@ -1841,10 +2151,10 @@ input[type="text"]::placeholder{color:var(--text3)}
         }
       }
     }
-    setInterval(refreshHives,10000);
-    setInterval(refreshStrays,30000);
-    setInterval(refreshAccounts,10000);
-    setInterval(refreshBeeLife,15000);
+    _intervals.push(setInterval(refreshHives,10000));
+    _intervals.push(setInterval(refreshStrays,30000));
+    _intervals.push(setInterval(refreshAccounts,10000));
+    _intervals.push(setInterval(refreshBeeLife,15000));
   }
   init();
 })();
