@@ -1,6 +1,6 @@
 {
   "name": "fleetode",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Multi-session Claude Code CLI manager - one brain, many sessions",
   "bin": {
     "fleet": "./bin/fleet"
