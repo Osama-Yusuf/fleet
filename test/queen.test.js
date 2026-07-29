@@ -363,3 +363,151 @@ test('start and stop manage timers', t => {
   assert.equal(q._paneTimer, null);
   assert.equal(q._gitTimer, null);
 });
+
+// ── Notification system ──
+
+test('notify creates an info notification and increments counter', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const id = q.notify('Test title', 'Test body', { hive });
+  assert.ok(id.startsWith('notif-'));
+  const notifs = q.getNotifications();
+  assert.equal(notifs.length, 1);
+  assert.equal(notifs[0].title, 'Test title');
+  assert.equal(notifs[0].type, 'info');
+  assert.equal(notifs[0].read, false);
+  assert.equal(notifs[0].resolved, false);
+});
+
+test('promptUser creates an action notification with buttons', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const id = q.promptUser('Disconnect', 'bee1 disconnected', [
+    { id: 'release_announce', label: 'Release & announce' },
+    { id: 'keep', label: 'Keep claim' }
+  ], { hive, bee: 'bee1' });
+  const notif = q.notifications.get(id);
+  assert.equal(notif.type, 'action');
+  assert.equal(notif.actions.length, 2);
+  assert.equal(notif.actions[0].id, 'release_announce');
+});
+
+test('resolveNotification marks notification resolved and records action', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const id = q.promptUser('Test', 'body', [{ id: 'ok', label: 'OK' }], { hive });
+  const result = q.resolveNotification(id, 'ok');
+  assert.ok(result);
+  assert.equal(result.resolved, true);
+  assert.equal(result.result.actionId, 'ok');
+  const second = q.resolveNotification(id, 'ok');
+  assert.equal(second, null, 'cannot resolve twice');
+});
+
+test('getNotifications filters by pending and unread', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  q.notify('Info', 'body', { hive });
+  const actionId = q.promptUser('Action', 'body', [{ id: 'ok', label: 'OK' }], { hive });
+  q.markRead(actionId);
+  assert.equal(q.getNotifications({ pending: true }).length, 1);
+  assert.equal(q.getNotifications({ unread: true }).length, 1);
+  q.resolveNotification(actionId, 'ok');
+  assert.equal(q.getNotifications({ pending: true }).length, 0);
+});
+
+test('getStatus includes notification counts', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  q.notify('A', 'body');
+  q.promptUser('B', 'body', [{ id: 'x', label: 'X' }]);
+  const status = q.getStatus();
+  assert.equal(status.notifications.total, 2);
+  assert.equal(status.notifications.unread, 2);
+  assert.equal(status.notifications.pending, 1);
+});
+
+// ── Post-disconnect flow ──
+
+test('scheduleDisconnectAssessment queues grace timer', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  q.scheduleDisconnectAssessment('bee1', hive);
+  assert.equal(q._disconnectGrace.size, 1);
+  q.scheduleDisconnectAssessment('bee1', hive);
+  assert.equal(q._disconnectGrace.size, 1, 'should not duplicate');
+});
+
+test('assessDisconnectedBee creates action notification with assessment', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'Working on: feature X\n');
+  q.assessDisconnectedBee('bee1', hive);
+  const notifs = q.getNotifications({ pending: true });
+  assert.equal(notifs.length, 1);
+  assert.ok(notifs[0].title.includes('bee1'));
+  assert.ok(notifs[0].body.includes('feature X'));
+  assert.equal(notifs[0].actions.length, 3);
+});
+
+test('handleNotificationAction release_announce deletes claim and announces', t => {
+  const hive = makeHive(t);
+  fs.mkdirSync(path.join(hive, 'bee2'));
+  const q = makeQueen(hive);
+  const claimFile = path.join(hive, '.fleet', 'active', 'bee1.md');
+  fs.writeFileSync(claimFile, 'Working on: task Y\n');
+  const id = q.promptUser('bee1 disconnected', 'Task: task Y', [
+    { id: 'release_announce', label: 'Release & announce' },
+    { id: 'keep', label: 'Keep' }
+  ], { hive, bee: 'bee1' });
+  q.resolveNotification(id, 'release_announce');
+  q.handleNotificationAction(q.notifications.get(id));
+  assert.ok(!fs.existsSync(claimFile), 'claim should be deleted');
+  const journal = fs.readFileSync(path.join(hive, '.fleet', 'journal.md'), 'utf8');
+  assert.ok(journal.includes('bee1'));
+  const bee2Inbox = q.readInbox('bee2', hive);
+  assert.ok(bee2Inbox.length > 0, 'should announce to other bees');
+});
+
+test('handleNotificationAction keep preserves claim file', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const claimFile = path.join(hive, '.fleet', 'active', 'bee1.md');
+  fs.writeFileSync(claimFile, 'Working on: task Z\n');
+  const id = q.promptUser('bee1 disconnected', 'body', [
+    { id: 'release_announce', label: 'Release' },
+    { id: 'keep', label: 'Keep' }
+  ], { hive, bee: 'bee1' });
+  q.resolveNotification(id, 'keep');
+  q.handleNotificationAction(q.notifications.get(id));
+  assert.ok(fs.existsSync(claimFile), 'claim should still exist');
+});
+
+test('disconnect triggers grace then assessment after timeout', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const k = `${hive}::bee1`;
+  q.heartbeats.set(k, { lastPing: Date.now() - 300000, bee: 'bee1', hive: hive, disconnected: false });
+  fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'Working on: something\n');
+  q.auditHive(hive);
+  assert.equal(q._disconnectGrace.size, 1, 'should schedule grace timer');
+  const grace = q._disconnectGrace.get(k);
+  grace.assessAt = Date.now() - 1000;
+  q.handleDisconnectGrace();
+  assert.equal(q._disconnectGrace.size, 0, 'grace should be consumed');
+  const notifs = q.getNotifications({ pending: true });
+  assert.equal(notifs.length, 1, 'should create action notification');
+});
+
+test('disconnect grace is cancelled if bee reconnects before assessment', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const k = `${hive}::bee1`;
+  q.heartbeats.set(k, { lastPing: Date.now() - 300000, bee: 'bee1', hive: hive, disconnected: true });
+  q.scheduleDisconnectAssessment('bee1', hive);
+  q.recordHeartbeat('bee1', hive);
+  const grace = q._disconnectGrace.get(k);
+  if (grace) grace.assessAt = Date.now() - 1000;
+  q.handleDisconnectGrace();
+  assert.equal(q.getNotifications({ pending: true }).length, 0, 'no notification if reconnected');
+});

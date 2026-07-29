@@ -561,6 +561,36 @@ input[type="text"]::placeholder{color:var(--text3)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 .modal-output{margin-top:14px;font-size:.6875rem;font-family:var(--mono);color:var(--text2);background:var(--bg);padding:11px;border-radius:var(--r-sm);max-height:130px;overflow-y:auto;white-space:pre-wrap;display:none;box-shadow:inset 0 0 0 1px var(--border)}
 
+/* ── notifications ── */
+.notif-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:none;color:var(--text2);cursor:pointer;transition:color 140ms,border-color 140ms,background 140ms;flex:none}
+.notif-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-bg)}
+.notif-btn.has-unread{color:var(--accent);border-color:var(--accent)}
+.notif-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:999px;background:var(--red,#e55);color:#fff;font-size:.5625rem;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;padding:0 4px;font-variant-numeric:tabular-nums;line-height:1}
+.notif-panel{position:fixed;top:var(--topbar);right:8px;width:380px;max-height:480px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);box-shadow:0 12px 36px rgba(0,0,0,.3);z-index:200;display:none;flex-direction:column;overflow:hidden}
+.notif-panel.open{display:flex}
+.notif-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;box-shadow:inset 0 -1px 0 var(--border);font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.notif-panel-header button{font-size:.625rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:2px 6px;border-radius:var(--r-sm)}
+.notif-panel-header button:hover{background:var(--accent-bg)}
+.notif-list{overflow-y:auto;flex:1;padding:4px 0}
+.notif-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:default;transition:background 100ms}
+.notif-item:hover{background:var(--bg)}
+.notif-item.unread{background:var(--accent-bg)}
+.notif-item.unread:hover{background:var(--accent-bg)}
+.notif-title{font-size:.8125rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.notif-title .notif-type{font-size:.5625rem;padding:1px 5px;border-radius:var(--r-sm);font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.notif-type.info{background:var(--accent-bg);color:var(--accent)}
+.notif-type.warning{background:var(--amber-bg);color:var(--amber)}
+.notif-type.action{background:rgba(229,85,85,.12);color:var(--red,#e55)}
+.notif-body{font-size:.75rem;color:var(--text2);margin-top:4px;line-height:1.5;white-space:pre-wrap;font-family:var(--mono)}
+.notif-time{font-size:.625rem;color:var(--text3);margin-top:4px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.notif-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.notif-actions button{font-size:.6875rem;padding:4px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:var(--mono);transition:background 100ms,border-color 100ms}
+.notif-actions button:hover{border-color:var(--accent);background:var(--accent-bg)}
+.notif-actions button:first-child{background:var(--accent);color:#fff;border-color:var(--accent)}
+.notif-actions button:first-child:hover{opacity:.9}
+.notif-resolved{font-size:.6875rem;color:var(--green,#22c55e);font-weight:600;margin-top:6px}
+.notif-empty{padding:30px;text-align:center;color:var(--text3);font-size:.8125rem}
+
 /* ── toasts ── */
 .toast-stack{position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none}
 .toast{background:var(--raised);box-shadow:var(--shadow-up);border-radius:var(--r);padding:11px 16px;font-size:.8125rem;max-width:340px;pointer-events:auto;animation:toast-in 200ms ease;line-height:1.45;border-left:2px solid var(--text3)}
@@ -808,6 +838,10 @@ input[type="text"]::placeholder{color:var(--text3)}
   </div>
 </div>
 
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header"><span>Notifications</span><button onclick="window._markAllRead()">Mark all read</button></div>
+  <div class="notif-list" id="notifList"></div>
+</div>
 <div class="toast-stack" id="toasts"></div>
 
 <div class="search-overlay" id="searchOverlay">
@@ -864,6 +898,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 (function(){
   let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={};
   let openAcct=null, destroyBee=null, mdMode='rendered';
+  let _notifs=[], _notifUnread=0, _notifOpen=false, _lastNotifCount=0;
 
   // hidden items (cosmetic dashboard-only, persisted in localStorage)
   let hiddenItems=new Set();try{hiddenItems=new Set(JSON.parse(localStorage.getItem('fleet-hidden')||'[]'));}catch{}
@@ -979,7 +1014,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       const cnt=a.stats?(a.stats.totalMessages||a.stats.totalSessions||0):0;
       const cls=openAcct===i?' open':'';
       return `<button class="pill${cls}" onclick="window._toggleAcct(${i})"><span class="pill-dot" style="background:${ACCT_C[i%ACCT_C.length]}"></span>${esc(a.name)}<span class="pill-count tabnum">${fmtNum(cnt)}</span></button>`;
-    }).join('')+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
+    }).join('')+`<button class="notif-btn${_notifUnread>0?' has-unread':''}" onclick="window._toggleNotifs()" title="Notifications" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6a4 4 0 0 1 8 0c0 3 1.5 4.5 2 5H2c.5-.5 2-2 2-5Z" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>${_notifUnread>0?`<span class="notif-badge">${_notifUnread>9?'9+':_notifUnread}</span>`:''}</button>`+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
     if(window._applyTheme)window._applyTheme();
   }
 
@@ -1043,6 +1078,71 @@ input[type="text"]::placeholder{color:var(--text3)}
     }
 
     $('acctInner').innerHTML=h;
+  }
+
+  // ── Notifications ──
+  window.refreshNotifs=refreshNotifs;
+  async function refreshNotifs(){
+    try{
+      _notifs=await api('/api/queen/notifications');
+      const prev=_notifUnread;
+      _notifUnread=_notifs.filter(n=>!n.read).length;
+      if(_notifUnread>prev&&prev>=0&&_notifs.length>_lastNotifCount){
+        const newest=_notifs[0];
+        if(newest&&!newest.read)toast(newest.title,newest.type==='action'?'err':(newest.type==='warning'?'err':'info'));
+      }
+      _lastNotifCount=_notifs.length;
+      renderPills();
+      if(_notifOpen)renderNotifPanel();
+    }catch{}
+  }
+
+  window._toggleNotifs=function(){
+    _notifOpen=!_notifOpen;
+    const panel=$('notifPanel');
+    if(_notifOpen){
+      panel.classList.add('open');
+      if($('acctPanel').classList.contains('open')){$('acctPanel').classList.remove('open');openAcct=null;renderPills();}
+      renderNotifPanel();
+    }else{
+      panel.classList.remove('open');
+    }
+  };
+
+  window._markAllRead=async function(){
+    for(const n of _notifs){
+      if(!n.read)await api(`/api/queen/notifications/${n.id}/read`,{method:'POST'});
+    }
+    await refreshNotifs();
+  };
+
+  window._notifAction=async function(id,actionId){
+    await api(`/api/queen/notifications/${id}/action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actionId})});
+    await api(`/api/queen/notifications/${id}/read`,{method:'POST'});
+    await refreshNotifs();
+  };
+
+  function renderNotifPanel(){
+    const list=$('notifList');
+    if(!_notifs.length){list.innerHTML='<div class="notif-empty">No notifications yet</div>';return;}
+    list.innerHTML=_notifs.slice(0,50).map(n=>{
+      const ago=Math.round((Date.now()-n.timestamp)/1000);
+      const timeStr=ago<60?ago+'s ago':ago<3600?Math.round(ago/60)+'m ago':Math.round(ago/3600)+'h ago';
+      const cls='notif-item'+(n.read?'':' unread');
+      let actions='';
+      if(n.type==='action'&&n.actions&&!n.resolved){
+        actions='<div class="notif-actions">'+n.actions.map(a=>`<button onclick="window._notifAction('${n.id}','${a.id}')">${esc(a.label)}</button>`).join('')+'</div>';
+      }else if(n.resolved&&n.result){
+        const picked=n.actions?n.actions.find(a=>a.id===n.result.actionId):null;
+        actions=`<div class="notif-resolved">Resolved: ${esc(picked?picked.label:n.result.actionId)}</div>`;
+      }
+      return `<div class="${cls}" onclick="(async()=>{await api('/api/queen/notifications/${n.id}/read',{method:'POST'});refreshNotifs()})()">
+        <div class="notif-title"><span class="notif-type ${n.type}">${n.type}</span>${esc(n.title)}</div>
+        <div class="notif-body">${esc(n.body)}</div>
+        ${actions}
+        <div class="notif-time">${timeStr}${n.bee?' &middot; '+esc(n.bee):''}</div>
+      </div>`;
+    }).join('');
   }
 
   // ── Sidebar ──
@@ -2232,6 +2332,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       _intervals.push(setInterval(refreshAccounts,10000));
       _intervals.push(setInterval(refreshBeeLife,15000));
       _intervals.push(setInterval(()=>{if(activeTab==='queen')renderQueenPanel();},10000));
+      _intervals.push(setInterval(refreshNotifs,10000));
     },4000);
   }
 
@@ -2260,6 +2361,10 @@ input[type="text"]::placeholder{color:var(--text3)}
       const sb=$('sidebar');
       if(sb.classList.contains('open')&&!sb.contains(e.target)&&!e.target.closest('.menu-btn'))sb.classList.remove('open');
     }
+  });
+
+  document.addEventListener('click',function(e){
+    if(_notifOpen&&!e.target.closest('.notif-panel')&&!e.target.closest('.notif-btn')){_notifOpen=false;$('notifPanel').classList.remove('open');}
   });
 
   document.addEventListener('click',function(e){
@@ -2355,7 +2460,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   async function init(){
     renderPills();
-    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts()]);
+    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts(),refreshNotifs()]);
     $('searchInput').addEventListener('input',triggerSearch);
     const hashParts=location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
     if(hashParts.length){
