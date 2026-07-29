@@ -19,6 +19,7 @@
   --shadow:0 0 0 1px rgba(35,29,21,.07),0 1px 2px rgba(35,29,21,.05);
   --shadow-up:0 0 0 1px rgba(180,116,12,.35),0 8px 22px rgba(35,29,21,.12);
   --wing:rgba(120,150,180,.35);
+  --ok:#1B8A56;--warn:#B4740C;--err:#C4402C;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#131110;--surface:#1A1715;--raised:#221E1A;--border:#332C24;
@@ -31,6 +32,7 @@
   --shadow:0 0 0 1px #2A241E,0 1px 2px rgba(0,0,0,.45);
   --shadow-up:0 0 0 1px rgba(240,168,64,.32),0 10px 28px rgba(0,0,0,.55);
   --wing:rgba(168,216,234,.35);
+  --ok:#5FD49A;--warn:#DFA765;--err:#F0705A;
 }}
 :root[data-theme="dark"]{
   --bg:#131110;--surface:#1A1715;--raised:#221E1A;--border:#332C24;
@@ -43,6 +45,7 @@
   --shadow:0 0 0 1px #2A241E,0 1px 2px rgba(0,0,0,.45);
   --shadow-up:0 0 0 1px rgba(240,168,64,.32),0 10px 28px rgba(0,0,0,.55);
   --wing:rgba(168,216,234,.35);
+  --ok:#5FD49A;--warn:#DFA765;--err:#F0705A;
 }
 :root[data-theme="light"]{
   --bg:#F6F2EA;--surface:#FFFCF7;--raised:#FFFCF7;--border:#E3D9C9;
@@ -55,6 +58,7 @@
   --shadow:0 0 0 1px rgba(35,29,21,.07),0 1px 2px rgba(35,29,21,.05);
   --shadow-up:0 0 0 1px rgba(180,116,12,.35),0 8px 22px rgba(35,29,21,.12);
   --wing:rgba(120,150,180,.35);
+  --ok:#1B8A56;--warn:#B4740C;--err:#C4402C;
 }
 
 body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -426,6 +430,50 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 @media(max-width:700px){.touch-row{grid-template-columns:minmax(150px,1.5fr) 2fr 32px}}
 @media(max-width:540px){.life-stats{grid-template-columns:repeat(2,1fr)}.bee-life-head{flex-direction:column}.touch-row{grid-template-columns:1fr 70px 28px}}
 
+/* ── queen panel ── */
+.queen-grid{display:flex;flex-direction:column;gap:16px;padding:12px}
+.queen-status-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.queen-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.queen-meta{color:var(--text3);font-size:.75rem;font-family:var(--mono);margin-left:auto}
+.queen-section{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.queen-section-hdr{padding:8px 14px;font-weight:600;font-size:.8125rem;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border)}
+.queen-empty{padding:12px 14px;color:var(--text3);font-size:.8125rem}
+.queen-warn{padding:8px 14px;color:var(--warn);font-size:.8125rem;font-weight:500}
+.queen-esc-row{display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:.8125rem;border-bottom:1px solid var(--border)}
+.queen-esc-row:last-child{border-bottom:0}
+.esc-level{font-family:var(--mono);font-size:.6875rem;font-weight:700;text-transform:uppercase;padding:1px 8px;border-radius:var(--r-sm);min-width:60px;text-align:center}
+.esc-notice .esc-level{background:var(--accent-bg);color:var(--accent)}
+.esc-warning .esc-level{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.esc-directive .esc-level{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.esc-override .esc-level{background:var(--err);color:#fff}
+.esc-bee{font-family:var(--mono);font-weight:600;color:var(--text2);min-width:50px}
+.esc-reason{color:var(--text3);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.queen-drone-row{display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:.8125rem;border-bottom:1px solid var(--border)}
+.queen-drone-row:last-child{border-bottom:0}
+.drone-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.drone-id{font-family:var(--mono);font-size:.6875rem;color:var(--text3);min-width:60px}
+.drone-bee{font-family:var(--mono);font-weight:600;color:var(--text2);min-width:50px}
+.drone-task{color:var(--text3);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.queen-brain-row{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;font-size:.8125rem;border-bottom:1px solid var(--border)}
+.queen-brain-row:last-child{border-bottom:0}
+.brain-section{color:var(--text)}
+.brain-lines{font-family:var(--mono);font-size:.6875rem;color:var(--warn);font-weight:600}
+.decree-box{padding:10px 14px;display:flex;gap:8px;align-items:flex-end}
+.decree-area{flex:1;resize:vertical;min-height:48px;max-height:120px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font:inherit;font-size:.8125rem}
+.queen-events{max-height:300px;overflow-y:auto}
+.queen-event{display:flex;align-items:center;gap:8px;padding:4px 14px;font-size:.75rem;border-bottom:1px solid var(--border)}
+.queen-event:last-child{border-bottom:0}
+.ev-time{font-family:var(--mono);font-size:.625rem;color:var(--text3);min-width:65px;flex-shrink:0}
+.ev-type{font-family:var(--mono);font-size:.625rem;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);min-width:70px;text-align:center}
+.ev-escalation{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.ev-deescalation{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.ev-drone_spawn,.ev-drone_done{background:var(--accent-bg);color:var(--accent)}
+.ev-tmux_inject{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.ev-announce,.ev-review_request{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
+.ev-brain_audit{background:color-mix(in srgb,var(--text3) 10%,transparent);color:var(--text3)}
+.ev-lease_acquired,.ev-lease_released{background:color-mix(in srgb,var(--ok) 10%,transparent);color:var(--ok)}
+.ev-bee{font-family:var(--mono);color:var(--text2);font-weight:600}
+.ev-detail{color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 /* ── tabs + markdown ── */
 .tab-group{display:flex;align-items:center;gap:2px;padding:7px 10px;box-shadow:inset 0 -1px 0 var(--border);flex-wrap:wrap}
 .tab-btn{padding:6px 16px;border-radius:var(--r-sm);font-size:.8125rem;font-weight:600;color:var(--text3);background:none;border:none;cursor:pointer;transition:color 120ms,background 120ms;font-family:inherit}
@@ -1623,6 +1671,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       <button class="tab-btn${activeTab==='brain'?' active':''}" onclick="window._tab('brain')">Brain</button>
       <button class="tab-btn${activeTab==='journal'?' active':''}" onclick="window._tab('journal')">Journal</button>
       <button class="tab-btn${activeTab==='profile'?' active':''}" onclick="window._tab('profile')">Profile</button>
+      <button class="tab-btn${activeTab==='queen'?' active':''}" onclick="window._tab('queen')">Queen</button>
       <div class="md-toggle">
         <button class="${mdMode==='rendered'?'active':''}" onclick="window._mdMode('rendered')">Rendered</button>
         <button class="${mdMode==='raw'?'active':''}" onclick="window._mdMode('raw')">Raw</button>
@@ -1646,6 +1695,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       o+=`<div class="tab-content${activeTab==='journal'?' active':''}" data-tab="journal"><div class="md-display rendered" id="journalContent">${renderMd(tabCache.journal||'')}</div></div>`;
       o+=`<div class="tab-content${activeTab==='profile'?' active':''}" data-tab="profile"><div class="md-display rendered" id="profileContent">${renderMd(tabCache.profile||'')}</div></div>`;
     }
+    o+=`<div class="tab-content${activeTab==='queen'?' active':''}" data-tab="queen"><div id="queenPanel">${tabCache.queen||''}</div></div>`;
     o+='</div></div>';
 
     $('hiveView').innerHTML=o;
@@ -1692,8 +1742,112 @@ input[type="text"]::placeholder{color:var(--text3)}
       const d=await api(`/api/hives/${name}/profile`);
       tabCache.profile=d.content||'';
       applyMdContent('profileContent',tabCache.profile);
+    } else if(t==='queen'){
+      renderQueenPanel();
     }
   }
+
+  async function renderQueenPanel(){
+    const el=$('queenPanel');
+    if(!el||!sel)return;
+    const hiveName=sel.name;
+    if(!el.children.length) el.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner"></span></div>';
+    try{
+      const [qs,hs]=await Promise.all([
+        api('/api/queen/status'),
+        api(`/api/queen/hive/${encodeURIComponent(hiveName)}`)
+      ]);
+      let o='<div class="queen-grid">';
+
+      // Status bar
+      const statusColor=qs.alive?'var(--ok)':'var(--err)';
+      o+=`<div class="queen-status-bar">
+        <span class="queen-dot" style="background:${statusColor}"></span>
+        <strong>${qs.alive?'Queen Active':'Queen Inactive'}</strong>
+        <span class="queen-meta">Uptime ${fmtDur(qs.uptime)} · ${qs.auditCount} audits · ${qs.bees} bees tracked</span>
+      </div>`;
+
+      // Escalations
+      const escEntries=Object.entries(hs.escalations||{});
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Escalations<span class="section-count">${escEntries.length}</span></div>`;
+      if(escEntries.length===0) o+='<div class="queen-empty">No active escalations</div>';
+      else for(const [bee,esc] of escEntries){
+        const lvlClass='esc-'+esc.level;
+        o+=`<div class="queen-esc-row ${lvlClass}"><span class="esc-level">${esc.level}</span><span class="esc-bee">${esc.bee}</span><span class="esc-reason">${esc.reason}</span></div>`;
+      }
+      o+='</div>';
+
+      // Drones
+      const drones=hs.drones||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Drones<span class="section-count">${drones.length}</span></div>`;
+      if(drones.length===0) o+='<div class="queen-empty">No drone activity</div>';
+      else for(const d of drones){
+        const sc=d.status==='running'?'var(--accent)':d.status==='completed'?'var(--ok)':'var(--err)';
+        o+=`<div class="queen-drone-row"><span class="drone-dot" style="background:${sc}"></span><span class="drone-id">${d.id}</span><span class="drone-bee">${d.bee}</span><span class="drone-task">${esc(d.task)}</span></div>`;
+      }
+      o+='</div>';
+
+      // Brain audit
+      const brain=hs.brain;
+      if(brain){
+        const cands=brain.extractCandidates||[];
+        o+=`<div class="queen-section"><div class="queen-section-hdr">Brain Audit<span class="section-count">${brain.totalLines} lines</span></div>`;
+        if(cands.length>0){
+          o+='<div class="queen-warn">Sections exceeding threshold:</div>';
+          for(const c of cands) o+=`<div class="queen-brain-row"><span class="brain-section">${esc(c.title)}</span><span class="brain-lines">${c.lines} lines</span></div>`;
+        } else o+='<div class="queen-empty">All sections within limits</div>';
+        o+='</div>';
+      }
+
+      // Royal Decree
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Royal Decree</div>
+        <div class="decree-box">
+          <textarea id="decreeInput" class="decree-area" placeholder="Broadcast a message to all bees..."></textarea>
+          <button class="btn btn-accent btn-sm" onclick="window._sendDecree()">Broadcast</button>
+        </div></div>`;
+
+      // Recent events
+      const events=hs.events||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Event Log<span class="section-count">${events.length}</span></div>`;
+      if(events.length===0) o+='<div class="queen-empty">No events recorded</div>';
+      else{
+        o+='<div class="queen-events">';
+        for(const ev of events.slice(0,30)){
+          const time=ev.at?new Date(ev.at).toLocaleTimeString():'';
+          o+=`<div class="queen-event"><span class="ev-time">${time}</span><span class="ev-type ev-${ev.type}">${ev.type}</span>`;
+          if(ev.bee) o+=`<span class="ev-bee">${ev.bee}</span>`;
+          if(ev.reason) o+=`<span class="ev-detail">${esc(ev.reason).substring(0,80)}</span>`;
+          else if(ev.message) o+=`<span class="ev-detail">${esc(ev.message).substring(0,80)}</span>`;
+          else if(ev.summary) o+=`<span class="ev-detail">${esc(ev.summary).substring(0,80)}</span>`;
+          else if(ev.result) o+=`<span class="ev-detail">${esc(ev.result).substring(0,80)}</span>`;
+          o+='</div>';
+        }
+        o+='</div>';
+      }
+      o+='</div></div>';
+      tabCache.queen=o;
+      const target=$('queenPanel');
+      if(target)target.innerHTML=o;
+    }catch(e){ const target=$('queenPanel'); if(target)target.innerHTML='<div class="queen-empty">Queen not available</div>'; }
+  }
+
+  function fmtDur(s){
+    if(s<60)return s+'s';
+    if(s<3600)return Math.floor(s/60)+'m';
+    return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+  }
+
+  window._sendDecree=async function(){
+    if(!sel)return;
+    const msg=$('decreeInput').value.trim();
+    if(!msg)return;
+    try{
+      await api('/api/queen/decree',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hive:sel.name,message:msg})});
+      $('decreeInput').value='';
+      toast('Decree broadcast','ok');
+      renderQueenPanel();
+    }catch(e){toast('Failed to broadcast','err');}
+  };
 
   window.saveBrain=async function(){
     if(!sel)return;
@@ -2077,6 +2231,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       _intervals.push(setInterval(refreshStrays,30000));
       _intervals.push(setInterval(refreshAccounts,10000));
       _intervals.push(setInterval(refreshBeeLife,15000));
+      _intervals.push(setInterval(()=>{if(activeTab==='queen')renderQueenPanel();},10000));
     },4000);
   }
 
@@ -2217,6 +2372,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     _intervals.push(setInterval(refreshStrays,30000));
     _intervals.push(setInterval(refreshAccounts,10000));
     _intervals.push(setInterval(refreshBeeLife,15000));
+    _intervals.push(setInterval(()=>{if(activeTab==='queen')renderQueenPanel();},10000));
   }
   init();
 })();
