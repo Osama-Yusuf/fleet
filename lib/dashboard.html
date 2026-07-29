@@ -616,7 +616,8 @@ input[type="text"]::placeholder{color:var(--text3)}
 /* ── doctor panel ── */
 .doctor-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:none;color:var(--text2);cursor:pointer;transition:color 140ms,border-color 140ms,background 140ms;flex:none}
 .doctor-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-bg)}
-.doctor-btn.has-issues{color:var(--amber);border-color:var(--amber)}
+.doctor-btn.has-issues{color:var(--amber);border-color:var(--amber);animation:doctor-pulse 2s ease-in-out infinite}
+@keyframes doctor-pulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px var(--amber-bg)}}
 .doctor-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:999px;background:var(--amber);color:#fff;font-size:.5625rem;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;padding:0 4px;font-variant-numeric:tabular-nums;line-height:1}
 .doctor-panel{position:fixed;top:var(--topbar);right:48px;width:440px;max-height:540px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);box-shadow:0 12px 36px rgba(0,0,0,.3);z-index:200;display:none;flex-direction:column;overflow:hidden}
 .doctor-panel.open{display:flex}
@@ -1078,7 +1079,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       const cnt=a.stats?(a.stats.totalMessages||a.stats.totalSessions||0):0;
       const cls=openAcct===i?' open':'';
       return `<button class="pill${cls}" onclick="window._toggleAcct(${i})"><span class="pill-dot" style="background:${ACCT_C[i%ACCT_C.length]}"></span>${esc(a.name)}<span class="pill-count tabnum">${fmtNum(cnt)}</span></button>`;
-    }).join('')+`<button class="doctor-btn${_doctorIssueCount>0?' has-issues':''}" onclick="window._toggleDoctor()" title="Hive Health" aria-label="Hive Health"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1v14M1 8h14" stroke-linecap="round"/><rect x="5" y="5" width="6" height="6" rx="1"/></svg>${_doctorIssueCount>0?`<span class="doctor-badge">${_doctorIssueCount}</span>`:''}</button>`+`<button class="notif-btn${_notifUnread>0?' has-unread':''}" onclick="window._toggleNotifs()" title="Notifications" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6a4 4 0 0 1 8 0c0 3 1.5 4.5 2 5H2c.5-.5 2-2 2-5Z" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>${_notifUnread>0?`<span class="notif-badge">${_notifUnread>9?'9+':_notifUnread}</span>`:''}</button>`+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
+    }).join('')+`<button class="doctor-btn${_doctorIssueCount>0?' has-issues':''}" onclick="window._toggleDoctor()" title="Hive Health (${_doctorIssueCount?_doctorIssueCount+' issues':'all healthy'})" aria-label="Hive Health"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.5v5M5.5 4h5" stroke-linecap="round" stroke-width="1.8"/><path d="M4 8.5h8v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4Z" stroke-linejoin="round"/><path d="M6 8.5V7a2 2 0 0 1 4 0v1.5" stroke-linecap="round"/></svg>${_doctorIssueCount>0?`<span class="doctor-badge">${_doctorIssueCount}</span>`:''}</button>`+`<button class="notif-btn${_notifUnread>0?' has-unread':''}" onclick="window._toggleNotifs()" title="Notifications" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6a4 4 0 0 1 8 0c0 3 1.5 4.5 2 5H2c.5-.5 2-2 2-5Z" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>${_notifUnread>0?`<span class="notif-badge">${_notifUnread>9?'9+':_notifUnread}</span>`:''}</button>`+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
     if(window._applyTheme)window._applyTheme();
   }
 
@@ -1282,7 +1283,8 @@ input[type="text"]::placeholder{color:var(--text3)}
       _updateDoctorFromHives();
       const h=hives.find(x=>x.name===hiveName);
       const ok=h&&h.compliance&&h.compliance.compliant;
-      toast(ok?hiveName+' fixed':'Fix incomplete',ok?'Hive is now compliant':'Some issues remain',ok?'ok':'err');
+      if(ok){toast(hiveName+' fixed','Hive is now compliant','ok');}
+      else{const issues=(h.compliance.issues||[]).map(i=>i.message).join('\n');toast(hiveName+' - issues remain',issues,'err');}
     }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
     if(btnEl){btnEl.disabled=false;btnEl.textContent='Fix this hive';}
   };
@@ -2313,7 +2315,12 @@ input[type="text"]::placeholder{color:var(--text3)}
     try{await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);await refreshHives();_updateDoctorFromHives();
       const h=hives.find(x=>x.name===sel.name);
       const ok=h&&h.compliance&&h.compliance.compliant;
-      toast('Doctor complete',ok?sel.name+' is healthy':'Issues remain - check the health panel',ok?'ok':'err');
+      if(ok){toast('Doctor complete',sel.name+' is healthy','ok');}
+      else{
+        const issues=(h.compliance.issues||[]).map(i=>i.message).join('\n');
+        toast('Doctor - issues found',issues||'Run fix to resolve','err');
+        if(!_doctorOpen){_doctorOpen=true;$('doctorPanel').classList.add('open');_updateDoctorFromHives();}
+      }
     }catch(e){toast('Doctor failed',e.message||'Unknown error','err');}
   };
   window._fixCompliance=async function(hiveName){
@@ -2321,7 +2328,8 @@ input[type="text"]::placeholder{color:var(--text3)}
     try{await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);await refreshHives();_updateDoctorFromHives();
       const h=hives.find(x=>x.name===hiveName);
       const ok=h&&h.compliance&&h.compliance.compliant;
-      toast(ok?hiveName+' fixed':'Fix incomplete',ok?'Hive is now compliant':'Some issues remain',ok?'ok':'err');
+      if(ok){toast(hiveName+' fixed','Hive is now compliant','ok');}
+      else{const issues=(h.compliance.issues||[]).map(i=>i.message).join('\n');toast(hiveName+' - issues remain',issues,'err');}
     }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
   };
   window._fixAllCompliance=async function(){
