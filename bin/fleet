@@ -875,6 +875,18 @@ cmd_doctor() {
   # Ensure coordination protocol is in brain
   inject_protocol CLAUDE.md
 
+  # Ensure MCP config exists for each bee
+  for b in bee*; do
+    [[ -d "$b" ]] || continue
+    if [[ ! -f "$b/.mcp.json" ]]; then
+      _setup_mcp_config "$hive" "$b"
+      ok "  Created .mcp.json for $b"
+    fi
+  done
+
+  # Ensure queen dir exists
+  mkdir -p .fleet/queen
+
   # Check Claude session links + trust
   local fixed=0
   for b in bee*; do
