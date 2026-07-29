@@ -1282,9 +1282,9 @@ input[type="text"]::placeholder{color:var(--text3)}
       await refreshHives();
       _updateDoctorFromHives();
       const h=hives.find(x=>x.name===hiveName);
-      const ok=h&&h.compliance&&h.compliance.compliant;
-      if(ok){toast(hiveName+' fixed','Hive is now compliant','ok');}
-      else{const issues=(h.compliance.issues||[]).map(i=>i.message).join('\n');toast(hiveName+' - issues remain',issues,'err');}
+      const issues=_complianceIssues(h);
+      if(!issues.length){toast(hiveName+' fixed','Hive is now compliant','ok');}
+      else{toast(hiveName+' - '+issues.length+' issue'+(issues.length>1?'s':'')+' remain',issues.map(i=>i.message).join('\n'),'err');}
     }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
     if(btnEl){btnEl.disabled=false;btnEl.textContent='Fix this hive';}
   };
@@ -2310,15 +2310,18 @@ input[type="text"]::placeholder{color:var(--text3)}
   };
 
   // ── Actions ──
+  function _complianceIssues(h){
+    if(!h||!h.compliance||!h.compliance.issues)return [];
+    return h.compliance.issues;
+  }
   window.doDoctor=async function(){
     if(!sel)return;toast('Running doctor...','info');
     try{await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);await refreshHives();_updateDoctorFromHives();
       const h=hives.find(x=>x.name===sel.name);
-      const ok=h&&h.compliance&&h.compliance.compliant;
-      if(ok){toast('Doctor complete',sel.name+' is healthy','ok');}
+      const issues=_complianceIssues(h);
+      if(!issues.length){toast('Doctor complete',sel.name+' is healthy','ok');}
       else{
-        const issues=(h.compliance.issues||[]).map(i=>i.message).join('\n');
-        toast('Doctor - issues found',issues||'Run fix to resolve','err');
+        toast('Doctor - '+issues.length+' issue'+(issues.length>1?'s':''),issues.map(i=>i.message).join('\n'),'err');
         if(!_doctorOpen){_doctorOpen=true;$('doctorPanel').classList.add('open');_updateDoctorFromHives();}
       }
     }catch(e){toast('Doctor failed',e.message||'Unknown error','err');}
@@ -2327,9 +2330,9 @@ input[type="text"]::placeholder{color:var(--text3)}
     toast('Fixing '+hiveName+'...','info');
     try{await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);await refreshHives();_updateDoctorFromHives();
       const h=hives.find(x=>x.name===hiveName);
-      const ok=h&&h.compliance&&h.compliance.compliant;
-      if(ok){toast(hiveName+' fixed','Hive is now compliant','ok');}
-      else{const issues=(h.compliance.issues||[]).map(i=>i.message).join('\n');toast(hiveName+' - issues remain',issues,'err');}
+      const issues=_complianceIssues(h);
+      if(!issues.length){toast(hiveName+' fixed','Hive is now compliant','ok');}
+      else{toast(hiveName+' - '+issues.length+' issue'+(issues.length>1?'s':'')+' remain',issues.map(i=>i.message).join('\n'),'err');}
     }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
   };
   window._fixAllCompliance=async function(){
