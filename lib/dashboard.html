@@ -1269,7 +1269,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     try{
       await refreshHives();
       _updateDoctorFromHives();
-      toast('Health check complete',_doctorIssueCount>0?_doctorIssueCount+' hive(s) need attention':'All hives healthy',_doctorIssueCount>0?'err':'ok');
+      toast('Health check complete',_doctorIssueCount>0?_doctorIssueCount+' hive(s) need attention':'All '+hives.length+' hives healthy',_doctorIssueCount>0?'err':'ok');
     }catch(e){toast('Check failed',e.message||'Unknown error','err');}
     btn.disabled=false;btn.textContent='Check all';
   };
@@ -1277,10 +1277,12 @@ input[type="text"]::placeholder{color:var(--text3)}
   window._doctorFixOne=async function(hiveName,btnEl){
     if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="doctor-spinner"></span>Fixing...';}
     try{
-      const d=await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);
+      await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);
       await refreshHives();
       _updateDoctorFromHives();
-      toast(hiveName+' fixed',d.output||'Doctor complete','ok');
+      const h=hives.find(x=>x.name===hiveName);
+      const ok=h&&h.compliance&&h.compliance.compliant;
+      toast(ok?hiveName+' fixed':'Fix incomplete',ok?'Hive is now compliant':'Some issues remain',ok?'ok':'err');
     }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
     if(btnEl){btnEl.disabled=false;btnEl.textContent='Fix this hive';}
   };
@@ -1290,13 +1292,14 @@ input[type="text"]::placeholder{color:var(--text3)}
     btn.disabled=true;btn.innerHTML='<span class="doctor-spinner"></span>Fixing...';
     try{
       const d=await api('/api/queen/doctor-all',{method:'POST'});
-      const ok=d.results.filter(r=>r.ok).length;
-      const failed=d.results.filter(r=>!r.ok);
       await refreshHives();
       _updateDoctorFromHives();
-      let body=ok+'/'+d.results.length+' hives fixed';
+      const remaining=hives.filter(h=>h.compliance&&!h.compliance.compliant).length;
+      const failed=d.results.filter(r=>!r.ok);
+      let body=d.results.length+' hives processed';
+      if(remaining)body+='\n'+remaining+' still need attention';
       if(failed.length)body+='\nFailed: '+failed.map(f=>f.hive).join(', ');
-      toast('Bulk fix complete',body,failed.length?'err':'ok');
+      toast('Bulk fix complete',body,remaining||failed.length?'err':'ok');
     }catch(e){toast('Bulk fix failed',e.message||'Unknown error','err');}
     btn.disabled=false;btn.textContent='Fix all';
   };
@@ -2307,44 +2310,52 @@ input[type="text"]::placeholder{color:var(--text3)}
   // ── Actions ──
   window.doDoctor=async function(){
     if(!sel)return;toast('Running doctor...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);toast('Doctor complete',d.output||'All checks passed for '+sel.name,'ok');await refreshHives();_updateDoctorFromHives();}
-    catch(e){toast('Doctor failed',e.message||'Unknown error','err');}
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);await refreshHives();_updateDoctorFromHives();
+      const h=hives.find(x=>x.name===sel.name);
+      const ok=h&&h.compliance&&h.compliance.compliant;
+      toast('Doctor complete',ok?sel.name+' is healthy':'Issues remain - check the health panel',ok?'ok':'err');
+    }catch(e){toast('Doctor failed',e.message||'Unknown error','err');}
   };
   window._fixCompliance=async function(hiveName){
     toast('Fixing '+hiveName+'...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);toast(hiveName+' fixed',d.output||'Hive is now compliant','ok');await refreshHives();_updateDoctorFromHives();}
-    catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
+    try{await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);await refreshHives();_updateDoctorFromHives();
+      const h=hives.find(x=>x.name===hiveName);
+      const ok=h&&h.compliance&&h.compliance.compliant;
+      toast(ok?hiveName+' fixed':'Fix incomplete',ok?'Hive is now compliant':'Some issues remain',ok?'ok':'err');
+    }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
   };
   window._fixAllCompliance=async function(){
     toast('Fixing all hives...','info');
     try{
       const d=await api('/api/queen/doctor-all',{method:'POST'});
+      await refreshHives();_updateDoctorFromHives();
       const ok=d.results.filter(r=>r.ok).length;
       const failed=d.results.filter(r=>!r.ok);
-      let body=ok+'/'+d.results.length+' hives fixed';
+      const remaining=hives.filter(h=>h.compliance&&!h.compliance.compliant).length;
+      let body=ok+'/'+d.results.length+' hives processed';
+      if(remaining)body+='\n'+remaining+' still need attention';
       if(failed.length)body+='\nFailed: '+failed.map(f=>f.hive).join(', ');
-      toast('Bulk fix complete',body,failed.length?'err':'ok');
-      await refreshHives();_updateDoctorFromHives();
+      toast('Bulk fix complete',body,remaining||failed.length?'err':'ok');
     }catch(e){toast('Bulk fix failed',e.message||'Unknown error','err');}
   };
   window.doClean=async function(){
     if(!sel)return;toast('Cleaning...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/clean`,{method:'POST'});toast(d.output||'Clean complete','ok');await refreshHives();}
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/clean`,{method:'POST'});toast('Clean complete',sel.name+' cleaned up','ok');await refreshHives();}
     catch(e){toast('Clean failed','err');}
   };
   window.doScan=async function(){
     toast('Scanning...','info');
-    try{const d=await api('/api/scan',{method:'POST'});toast(d.output||'Scan complete','ok');await Promise.all([refreshHives(),refreshStrays()]);}
+    try{await api('/api/scan',{method:'POST'});await Promise.all([refreshHives(),refreshStrays()]);toast('Scan complete',hives.length+' hives, '+strays.length+' strays found','ok');}
     catch(e){toast('Scan failed','err');}
   };
   window.doLaunch=async function(bee){
-    if(!sel)return;toast(`Launching ${bee}...`,'info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/launch/${encodeURIComponent(bee)}`,{method:'POST'});toast(d.output||`Launched ${bee}`,'ok');}
+    if(!sel)return;toast('Launching '+bee+'...','info');
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/launch/${encodeURIComponent(bee)}`,{method:'POST'});toast('Launched',bee+' session opened','ok');}
     catch(e){toast('Launch failed','err');}
   };
   window.doLaunchAll=async function(){
     if(!sel)return;toast('Launching all bees...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/launch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});toast(d.output||'All bees launched','ok');}
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/launch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});toast('All launched','All bees in '+sel.name+' opened','ok');}
     catch(e){toast('Launch failed','err');}
   };
 
