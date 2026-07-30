@@ -19,6 +19,7 @@
   --shadow:0 0 0 1px rgba(35,29,21,.07),0 1px 2px rgba(35,29,21,.05);
   --shadow-up:0 0 0 1px rgba(180,116,12,.35),0 8px 22px rgba(35,29,21,.12);
   --wing:rgba(120,150,180,.35);
+  --ok:#1B8A56;--warn:#B4740C;--err:#C4402C;
 }
 @media(prefers-color-scheme:dark){:root{
   --bg:#131110;--surface:#1A1715;--raised:#221E1A;--border:#332C24;
@@ -31,6 +32,7 @@
   --shadow:0 0 0 1px #2A241E,0 1px 2px rgba(0,0,0,.45);
   --shadow-up:0 0 0 1px rgba(240,168,64,.32),0 10px 28px rgba(0,0,0,.55);
   --wing:rgba(168,216,234,.35);
+  --ok:#5FD49A;--warn:#DFA765;--err:#F0705A;
 }}
 :root[data-theme="dark"]{
   --bg:#131110;--surface:#1A1715;--raised:#221E1A;--border:#332C24;
@@ -43,6 +45,7 @@
   --shadow:0 0 0 1px #2A241E,0 1px 2px rgba(0,0,0,.45);
   --shadow-up:0 0 0 1px rgba(240,168,64,.32),0 10px 28px rgba(0,0,0,.55);
   --wing:rgba(168,216,234,.35);
+  --ok:#5FD49A;--warn:#DFA765;--err:#F0705A;
 }
 :root[data-theme="light"]{
   --bg:#F6F2EA;--surface:#FFFCF7;--raised:#FFFCF7;--border:#E3D9C9;
@@ -55,6 +58,7 @@
   --shadow:0 0 0 1px rgba(35,29,21,.07),0 1px 2px rgba(35,29,21,.05);
   --shadow-up:0 0 0 1px rgba(180,116,12,.35),0 8px 22px rgba(35,29,21,.12);
   --wing:rgba(120,150,180,.35);
+  --ok:#1B8A56;--warn:#B4740C;--err:#C4402C;
 }
 
 body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -426,6 +430,50 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 @media(max-width:700px){.touch-row{grid-template-columns:minmax(150px,1.5fr) 2fr 32px}}
 @media(max-width:540px){.life-stats{grid-template-columns:repeat(2,1fr)}.bee-life-head{flex-direction:column}.touch-row{grid-template-columns:1fr 70px 28px}}
 
+/* ── queen panel ── */
+.queen-grid{display:flex;flex-direction:column;gap:16px;padding:12px}
+.queen-status-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.queen-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.queen-meta{color:var(--text3);font-size:.75rem;font-family:var(--mono);margin-left:auto}
+.queen-section{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.queen-section-hdr{padding:8px 14px;font-weight:600;font-size:.8125rem;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border)}
+.queen-empty{padding:12px 14px;color:var(--text3);font-size:.8125rem}
+.queen-warn{padding:8px 14px;color:var(--warn);font-size:.8125rem;font-weight:500}
+.queen-esc-row{display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:.8125rem;border-bottom:1px solid var(--border)}
+.queen-esc-row:last-child{border-bottom:0}
+.esc-level{font-family:var(--mono);font-size:.6875rem;font-weight:700;text-transform:uppercase;padding:1px 8px;border-radius:var(--r-sm);min-width:60px;text-align:center}
+.esc-notice .esc-level{background:var(--accent-bg);color:var(--accent)}
+.esc-warning .esc-level{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.esc-directive .esc-level{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.esc-override .esc-level{background:var(--err);color:#fff}
+.esc-bee{font-family:var(--mono);font-weight:600;color:var(--text2);min-width:50px}
+.esc-reason{color:var(--text3);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.queen-drone-row{display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:.8125rem;border-bottom:1px solid var(--border)}
+.queen-drone-row:last-child{border-bottom:0}
+.drone-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.drone-id{font-family:var(--mono);font-size:.6875rem;color:var(--text3);min-width:60px}
+.drone-bee{font-family:var(--mono);font-weight:600;color:var(--text2);min-width:50px}
+.drone-task{color:var(--text3);font-size:.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.queen-brain-row{display:flex;align-items:center;justify-content:space-between;padding:6px 14px;font-size:.8125rem;border-bottom:1px solid var(--border)}
+.queen-brain-row:last-child{border-bottom:0}
+.brain-section{color:var(--text)}
+.brain-lines{font-family:var(--mono);font-size:.6875rem;color:var(--warn);font-weight:600}
+.decree-box{padding:10px 14px;display:flex;gap:8px;align-items:flex-end}
+.decree-area{flex:1;resize:vertical;min-height:48px;max-height:120px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font:inherit;font-size:.8125rem}
+.queen-events{max-height:300px;overflow-y:auto}
+.queen-event{display:flex;align-items:center;gap:8px;padding:4px 14px;font-size:.75rem;border-bottom:1px solid var(--border)}
+.queen-event:last-child{border-bottom:0}
+.ev-time{font-family:var(--mono);font-size:.625rem;color:var(--text3);min-width:65px;flex-shrink:0}
+.ev-type{font-family:var(--mono);font-size:.625rem;font-weight:600;padding:1px 6px;border-radius:var(--r-sm);min-width:70px;text-align:center}
+.ev-escalation{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
+.ev-deescalation{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.ev-drone_spawn,.ev-drone_done{background:var(--accent-bg);color:var(--accent)}
+.ev-tmux_inject{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.ev-announce,.ev-review_request{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
+.ev-brain_audit{background:color-mix(in srgb,var(--text3) 10%,transparent);color:var(--text3)}
+.ev-lease_acquired,.ev-lease_released{background:color-mix(in srgb,var(--ok) 10%,transparent);color:var(--ok)}
+.ev-bee{font-family:var(--mono);color:var(--text2);font-weight:600}
+.ev-detail{color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 /* ── tabs + markdown ── */
 .tab-group{display:flex;align-items:center;gap:2px;padding:7px 10px;box-shadow:inset 0 -1px 0 var(--border);flex-wrap:wrap}
 .tab-btn{padding:6px 16px;border-radius:var(--r-sm);font-size:.8125rem;font-weight:600;color:var(--text3);background:none;border:none;cursor:pointer;transition:color 120ms,background 120ms;font-family:inherit}
@@ -513,12 +561,88 @@ input[type="text"]::placeholder{color:var(--text3)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
 .modal-output{margin-top:14px;font-size:.6875rem;font-family:var(--mono);color:var(--text2);background:var(--bg);padding:11px;border-radius:var(--r-sm);max-height:130px;overflow-y:auto;white-space:pre-wrap;display:none;box-shadow:inset 0 0 0 1px var(--border)}
 
+/* ── compliance banner ── */
+.compliance-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--r);background:var(--amber-bg);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);margin-bottom:16px}
+.compliance-banner svg{flex-shrink:0;margin-top:1px;color:var(--amber)}
+.compliance-body{flex:1;font-size:.8125rem;line-height:1.5}
+.compliance-title{font-weight:700;color:var(--amber);margin-bottom:2px}
+.compliance-issues{color:var(--text2);margin:4px 0 0;padding-left:16px;font-size:.75rem;font-family:var(--mono)}
+.compliance-issues li{margin-bottom:2px}
+.compliance-actions{display:flex;gap:6px;margin-top:8px}
+.compliance-actions .btn{font-size:.6875rem;padding:4px 12px}
+.compliance-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0;margin-left:auto}
+
+/* ── notifications ── */
+.notif-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:none;color:var(--text2);cursor:pointer;transition:color 140ms,border-color 140ms,background 140ms;flex:none}
+.notif-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-bg)}
+.notif-btn.has-unread{color:var(--accent);border-color:var(--accent)}
+.notif-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:999px;background:var(--red,#e55);color:#fff;font-size:.5625rem;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;padding:0 4px;font-variant-numeric:tabular-nums;line-height:1}
+.notif-panel{position:fixed;top:var(--topbar);right:8px;width:380px;max-height:480px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);box-shadow:0 12px 36px rgba(0,0,0,.3);z-index:200;display:none;flex-direction:column;overflow:hidden}
+.notif-panel.open{display:flex}
+.notif-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;box-shadow:inset 0 -1px 0 var(--border);font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.notif-panel-header button{font-size:.625rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:2px 6px;border-radius:var(--r-sm)}
+.notif-panel-header button:hover{background:var(--accent-bg)}
+.notif-list{overflow-y:auto;flex:1;padding:4px 0}
+.notif-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:default;transition:background 100ms}
+.notif-item:hover{background:var(--bg)}
+.notif-item.unread{background:var(--accent-bg)}
+.notif-item.unread:hover{background:var(--accent-bg)}
+.notif-title{font-size:.8125rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+.notif-title .notif-type{font-size:.5625rem;padding:1px 5px;border-radius:var(--r-sm);font-weight:700;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.notif-type.info{background:var(--accent-bg);color:var(--accent)}
+.notif-type.warning{background:var(--amber-bg);color:var(--amber)}
+.notif-type.action{background:rgba(229,85,85,.12);color:var(--red,#e55)}
+.notif-body{font-size:.75rem;color:var(--text2);margin-top:4px;line-height:1.5;white-space:pre-wrap;font-family:var(--mono)}
+.notif-time{font-size:.625rem;color:var(--text3);margin-top:4px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.notif-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.notif-actions button{font-size:.6875rem;padding:4px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:var(--mono);transition:background 100ms,border-color 100ms}
+.notif-actions button:hover{border-color:var(--accent);background:var(--accent-bg)}
+.notif-actions button:first-child{background:var(--accent);color:#fff;border-color:var(--accent)}
+.notif-actions button:first-child:hover{opacity:.9}
+.notif-resolved{font-size:.6875rem;color:var(--green,#22c55e);font-weight:600;margin-top:6px}
+.notif-empty{padding:30px;text-align:center;color:var(--text3);font-size:.8125rem}
+
 /* ── toasts ── */
 .toast-stack{position:fixed;bottom:16px;right:16px;z-index:300;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none}
-.toast{background:var(--raised);box-shadow:var(--shadow-up);border-radius:var(--r);padding:11px 16px;font-size:.8125rem;max-width:340px;pointer-events:auto;animation:toast-in 200ms ease;line-height:1.45;border-left:2px solid var(--text3)}
+.toast{background:var(--raised);box-shadow:var(--shadow-up);border-radius:var(--r);padding:12px 36px 12px 16px;font-size:.8125rem;max-width:420px;min-width:280px;pointer-events:auto;animation:toast-in 200ms ease;line-height:1.45;border-left:3px solid var(--text3);position:relative}
 .toast.ok{border-left-color:var(--green)}
 .toast.err{border-left-color:var(--red)}
 .toast.info{border-left-color:var(--accent)}
+.toast-title{font-weight:700;font-size:.8125rem;margin-bottom:2px}
+.toast-body{font-size:.75rem;color:var(--text2);line-height:1.5;font-family:var(--mono);white-space:pre-wrap;max-height:80px;overflow-y:auto}
+.toast-close{position:absolute;top:6px;right:6px;width:22px;height:22px;border:none;background:none;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);font-size:.85rem;padding:0;line-height:1}
+.toast-close:hover{color:var(--text);background:var(--accent-bg)}
+
+/* ── doctor panel ── */
+.doctor-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:none;color:var(--text2);cursor:pointer;transition:color 140ms,border-color 140ms,background 140ms;flex:none}
+.doctor-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-bg)}
+.doctor-btn.has-issues{color:var(--amber);border-color:var(--amber);animation:doctor-pulse 2s ease-in-out infinite}
+@keyframes doctor-pulse{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 4px var(--amber-bg)}}
+.doctor-badge{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:999px;background:var(--amber);color:#fff;font-size:.5625rem;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;padding:0 4px;font-variant-numeric:tabular-nums;line-height:1}
+.doctor-panel{position:fixed;top:var(--topbar);right:48px;width:440px;max-height:540px;background:var(--surface);border:1px solid var(--border);border-radius:0 0 var(--r) var(--r);box-shadow:0 12px 36px rgba(0,0,0,.3);z-index:200;display:none;flex-direction:column;overflow:hidden}
+.doctor-panel.open{display:flex}
+.doctor-panel-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;box-shadow:inset 0 -1px 0 var(--border);font-size:.6875rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3)}
+.doctor-panel-header .doctor-header-actions{display:flex;gap:6px}
+.doctor-panel-header button{font-size:.625rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--mono);padding:2px 8px;border-radius:var(--r-sm)}
+.doctor-panel-header button:hover{background:var(--accent-bg)}
+.doctor-panel-header button:disabled{opacity:.5;cursor:not-allowed}
+.doctor-list{overflow-y:auto;flex:1;padding:4px 0}
+.doctor-hive{padding:10px 14px;border-bottom:1px solid var(--border)}
+.doctor-hive:last-child{border-bottom:0}
+.doctor-hive-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.doctor-hive-name{font-family:var(--mono);font-size:.8125rem;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doctor-hive-status{font-size:.5625rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:var(--r-sm)}
+.doctor-hive-status.ok{color:var(--green);background:var(--green-bg)}
+.doctor-hive-status.bad{color:var(--amber);background:var(--amber-bg)}
+.doctor-hive-path{font-size:.625rem;color:var(--text3);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.doctor-issues{list-style:none;padding:0;margin:4px 0 6px}
+.doctor-issues li{font-size:.75rem;color:var(--text2);font-family:var(--mono);padding:2px 0 2px 14px;position:relative}
+.doctor-issues li::before{content:'';position:absolute;left:2px;top:8px;width:5px;height:5px;border-radius:50%;background:var(--amber)}
+.doctor-fix-btn{font-size:.6875rem;padding:3px 10px;border-radius:var(--r-sm);border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);background:none;color:var(--accent);cursor:pointer;font-family:var(--mono);transition:background 100ms,border-color 100ms}
+.doctor-fix-btn:hover{background:var(--accent-bg);border-color:var(--accent)}
+.doctor-fix-btn:disabled{opacity:.5;cursor:not-allowed}
+.doctor-empty{padding:30px;text-align:center;color:var(--text3);font-size:.8125rem}
+.doctor-spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
 
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -760,6 +884,20 @@ input[type="text"]::placeholder{color:var(--text3)}
   </div>
 </div>
 
+<div class="notif-panel" id="notifPanel">
+  <div class="notif-panel-header"><span>Notifications</span><button onclick="window._markAllRead()">Mark all read</button></div>
+  <div class="notif-list" id="notifList"></div>
+</div>
+<div class="doctor-panel" id="doctorPanel">
+  <div class="doctor-panel-header">
+    <span>Hive Health</span>
+    <div class="doctor-header-actions">
+      <button id="doctorFixAllBtn" onclick="window._doctorFixAll()" style="display:none">Fix all</button>
+      <button id="doctorCheckBtn" onclick="window._doctorCheck()">Check all</button>
+    </div>
+  </div>
+  <div class="doctor-list" id="doctorList"><div class="doctor-empty">Click "Check all" to scan hives</div></div>
+</div>
 <div class="toast-stack" id="toasts"></div>
 
 <div class="search-overlay" id="searchOverlay">
@@ -816,6 +954,8 @@ input[type="text"]::placeholder{color:var(--text3)}
 (function(){
   let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={};
   let openAcct=null, destroyBee=null, mdMode='rendered';
+  let _notifs=[], _notifUnread=0, _notifOpen=false, _lastNotifCount=0;
+  let _doctorOpen=false, _doctorIssueCount=0, _doctorResults=null;
 
   // hidden items (cosmetic dashboard-only, persisted in localStorage)
   let hiddenItems=new Set();try{hiddenItems=new Set(JSON.parse(localStorage.getItem('fleet-hidden')||'[]'));}catch{}
@@ -903,12 +1043,20 @@ input[type="text"]::placeholder{color:var(--text3)}
     return r.json();
   }
 
-  function toast(msg,type='info'){
+  function toast(title,body,type){
+    if(!type&&typeof body==='string'&&['ok','err','info'].includes(body)){type=body;body=null;}
+    if(!type)type='info';
     const el=document.createElement('div');
     el.className='toast '+type;
-    el.textContent=msg;
+    const dismiss=()=>{el.style.animation='toast-out 200ms ease forwards';setTimeout(()=>el.remove(),220)};
+    let html='<button class="toast-close" onclick="this.parentElement.remove()">&times;</button>';
+    html+='<div class="toast-title">'+esc(title)+'</div>';
+    if(body)html+='<div class="toast-body">'+esc(body)+'</div>';
+    el.innerHTML=html;
     $('toasts').appendChild(el);
-    setTimeout(()=>{el.style.animation='toast-out 200ms ease forwards';setTimeout(()=>el.remove(),220)},3500);
+    const timer=setTimeout(dismiss,8000);
+    el.addEventListener('mouseenter',()=>clearTimeout(timer));
+    el.addEventListener('mouseleave',()=>setTimeout(dismiss,3000));
   }
 
   const ACCT_C=['#DFA765','#A855F7','#5FD49A','#5891F5','#EC7C9B','#06B6D4'];
@@ -931,7 +1079,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       const cnt=a.stats?(a.stats.totalMessages||a.stats.totalSessions||0):0;
       const cls=openAcct===i?' open':'';
       return `<button class="pill${cls}" onclick="window._toggleAcct(${i})"><span class="pill-dot" style="background:${ACCT_C[i%ACCT_C.length]}"></span>${esc(a.name)}<span class="pill-count tabnum">${fmtNum(cnt)}</span></button>`;
-    }).join('')+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
+    }).join('')+`<button class="doctor-btn${_doctorIssueCount>0?' has-issues':''}" onclick="window._toggleDoctor()" title="Hive Health (${_doctorIssueCount?_doctorIssueCount+' issues':'all healthy'})" aria-label="Hive Health"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.5v5M5.5 4h5" stroke-linecap="round" stroke-width="1.8"/><path d="M4 8.5h8v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4Z" stroke-linejoin="round"/><path d="M6 8.5V7a2 2 0 0 1 4 0v1.5" stroke-linecap="round"/></svg>${_doctorIssueCount>0?`<span class="doctor-badge">${_doctorIssueCount}</span>`:''}</button>`+`<button class="notif-btn${_notifUnread>0?' has-unread':''}" onclick="window._toggleNotifs()" title="Notifications" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6a4 4 0 0 1 8 0c0 3 1.5 4.5 2 5H2c.5-.5 2-2 2-5Z" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>${_notifUnread>0?`<span class="notif-badge">${_notifUnread>9?'9+':_notifUnread}</span>`:''}</button>`+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
     if(window._applyTheme)window._applyTheme();
   }
 
@@ -997,6 +1145,167 @@ input[type="text"]::placeholder{color:var(--text3)}
     $('acctInner').innerHTML=h;
   }
 
+  // ── Notifications ──
+  window.refreshNotifs=refreshNotifs;
+  async function refreshNotifs(){
+    try{
+      _notifs=await api('/api/queen/notifications');
+      const prev=_notifUnread;
+      _notifUnread=_notifs.filter(n=>!n.read).length;
+      if(_notifUnread>prev&&prev>=0&&_notifs.length>_lastNotifCount){
+        const newest=_notifs[0];
+        if(newest&&!newest.read)toast(newest.title,newest.body||null,newest.type==='action'?'err':(newest.type==='warning'?'err':'info'));
+      }
+      _lastNotifCount=_notifs.length;
+      renderPills();
+      if(_notifOpen)renderNotifPanel();
+    }catch{}
+  }
+
+  window._toggleNotifs=function(){
+    _notifOpen=!_notifOpen;
+    const panel=$('notifPanel');
+    if(_notifOpen){
+      panel.classList.add('open');
+      if($('acctPanel').classList.contains('open')){$('acctPanel').classList.remove('open');openAcct=null;renderPills();}
+      if(_doctorOpen){_doctorOpen=false;$('doctorPanel').classList.remove('open');}
+      renderNotifPanel();
+    }else{
+      panel.classList.remove('open');
+    }
+  };
+
+  window._markAllRead=async function(){
+    for(const n of _notifs){
+      if(!n.read)await api(`/api/queen/notifications/${n.id}/read`,{method:'POST'});
+    }
+    await refreshNotifs();
+  };
+
+  window._notifAction=async function(id,actionId){
+    await api(`/api/queen/notifications/${id}/action`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({actionId})});
+    await api(`/api/queen/notifications/${id}/read`,{method:'POST'});
+    await refreshNotifs();
+  };
+
+  function renderNotifPanel(){
+    const list=$('notifList');
+    if(!_notifs.length){list.innerHTML='<div class="notif-empty">No notifications yet</div>';return;}
+    list.innerHTML=_notifs.slice(0,50).map(n=>{
+      const ago=Math.round((Date.now()-n.timestamp)/1000);
+      const timeStr=ago<60?ago+'s ago':ago<3600?Math.round(ago/60)+'m ago':Math.round(ago/3600)+'h ago';
+      const cls='notif-item'+(n.read?'':' unread');
+      let actions='';
+      if(n.type==='action'&&n.actions&&!n.resolved){
+        actions='<div class="notif-actions">'+n.actions.map(a=>`<button onclick="window._notifAction('${n.id}','${a.id}')">${esc(a.label)}</button>`).join('')+'</div>';
+      }else if(n.resolved&&n.result){
+        const picked=n.actions?n.actions.find(a=>a.id===n.result.actionId):null;
+        actions=`<div class="notif-resolved">Resolved: ${esc(picked?picked.label:n.result.actionId)}</div>`;
+      }
+      return `<div class="${cls}" onclick="(async()=>{await api('/api/queen/notifications/${n.id}/read',{method:'POST'});refreshNotifs()})()">
+        <div class="notif-title"><span class="notif-type ${n.type}">${n.type}</span>${esc(n.title)}</div>
+        <div class="notif-body">${esc(n.body)}</div>
+        ${actions}
+        <div class="notif-time">${timeStr}${n.bee?' &middot; '+esc(n.bee):''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Doctor panel ──
+  window._toggleDoctor=function(){
+    _doctorOpen=!_doctorOpen;
+    const panel=$('doctorPanel');
+    if(_doctorOpen){
+      panel.classList.add('open');
+      if($('acctPanel').classList.contains('open')){$('acctPanel').classList.remove('open');openAcct=null;renderPills();}
+      if(_notifOpen){_notifOpen=false;$('notifPanel').classList.remove('open');}
+      _updateDoctorFromHives();
+    }else{
+      panel.classList.remove('open');
+    }
+  };
+
+  function _updateDoctorFromHives(){
+    const results=hives.map(h=>({
+      name:h.name,
+      path:h.path||'',
+      compliant:h.compliance?h.compliance.compliant:false,
+      issues:h.compliance?h.compliance.issues||[]:[{type:'unknown',message:'Compliance data unavailable - restart fleet serve'}],
+    }));
+    _doctorResults=results;
+    _doctorIssueCount=results.filter(r=>!r.compliant).length;
+    renderDoctorPanel();
+    renderPills();
+  }
+
+  function renderDoctorPanel(){
+    const list=$('doctorList');
+    const fixAllBtn=$('doctorFixAllBtn');
+    if(!_doctorResults||!_doctorResults.length){
+      list.innerHTML='<div class="doctor-empty">No hives registered</div>';
+      if(fixAllBtn)fixAllBtn.style.display='none';
+      return;
+    }
+    const badCount=_doctorResults.filter(r=>!r.compliant).length;
+    if(fixAllBtn)fixAllBtn.style.display=badCount>0?'':'none';
+    list.innerHTML=_doctorResults.map(r=>{
+      let h=`<div class="doctor-hive">
+        <div class="doctor-hive-head">
+          <span class="doctor-hive-name">${esc(r.name)}</span>
+          <span class="doctor-hive-status ${r.compliant?'ok':'bad'}">${r.compliant?'Healthy':'Issues'}</span>
+        </div>
+        <div class="doctor-hive-path">${esc(r.path)}</div>`;
+      if(!r.compliant&&r.issues.length){
+        h+='<ul class="doctor-issues">'+r.issues.map(i=>'<li>'+esc(i.message)+'</li>').join('')+'</ul>';
+        h+=`<button class="doctor-fix-btn" onclick="window._doctorFixOne('${esc(r.name)}',this)">Fix this hive</button>`;
+      }
+      h+='</div>';
+      return h;
+    }).join('');
+  }
+
+  window._doctorCheck=async function(){
+    const btn=$('doctorCheckBtn');
+    btn.disabled=true;btn.innerHTML='<span class="doctor-spinner"></span>Checking...';
+    try{
+      await refreshHives();
+      _updateDoctorFromHives();
+      toast('Health check complete',_doctorIssueCount>0?_doctorIssueCount+' hive(s) need attention':'All '+hives.length+' hives healthy',_doctorIssueCount>0?'err':'ok');
+    }catch(e){toast('Check failed',e.message||'Unknown error','err');}
+    btn.disabled=false;btn.textContent='Check all';
+  };
+
+  window._doctorFixOne=async function(hiveName,btnEl){
+    if(btnEl){btnEl.disabled=true;btnEl.innerHTML='<span class="doctor-spinner"></span>Fixing...';}
+    try{
+      await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);
+      await refreshHives();
+      _updateDoctorFromHives();
+      const h=hives.find(x=>x.name===hiveName);
+      const issues=_complianceIssues(h);
+      if(!issues.length){toast(hiveName+' fixed','Hive is now compliant','ok');}
+      else{toast(hiveName+' - '+issues.length+' issue'+(issues.length>1?'s':'')+' remain',issues.map(i=>i.message).join('\n'),'err');}
+    }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
+    if(btnEl){btnEl.disabled=false;btnEl.textContent='Fix this hive';}
+  };
+
+  window._doctorFixAll=async function(){
+    const btn=$('doctorFixAllBtn');
+    btn.disabled=true;btn.innerHTML='<span class="doctor-spinner"></span>Fixing...';
+    try{
+      const d=await api('/api/queen/doctor-all',{method:'POST'});
+      await refreshHives();
+      _updateDoctorFromHives();
+      const remaining=hives.filter(h=>h.compliance&&!h.compliance.compliant).length;
+      const failed=d.results.filter(r=>!r.ok);
+      let body=d.results.length+' hives processed';
+      if(remaining)body+='\n'+remaining+' still need attention';
+      if(failed.length)body+='\nFailed: '+failed.map(f=>f.hive).join(', ');
+      toast('Bulk fix complete',body,remaining||failed.length?'err':'ok');
+    }catch(e){toast('Bulk fix failed',e.message||'Unknown error','err');}
+    btn.disabled=false;btn.textContent='Fix all';
+  };
+
   // ── Sidebar ──
   function renderSidebar(){
     const q=($('sidebarSearch')?$('sidebarSearch').value:'').toLowerCase().trim();
@@ -1025,9 +1334,11 @@ input[type="text"]::placeholder{color:var(--text3)}
         const active=sel&&sel.name===h.name;
         const ct=(h.bees||[]).length;
         const t=h.type==='brain'?'brain':(h.type||'repo');
-        return `<button class="hive-item${active?' active':''}" onclick="window._selHive('${esc(h.name)}')" oncontextmenu="window._showHideMenu(event,'hive','${esc(h.name)}')">
+        const nc=h.compliance&&!h.compliance.compliant;
+        return `<button class="hive-item${active?' active':''}" onclick="window._selHive('${esc(h.name)}')" oncontextmenu="window._showHideMenu(event,'hive','${esc(h.name)}')" ${nc?'title="Non-compliant - click to see details"':''}>
           <span class="hive-name">${esc(h.name)}</span>
           <span class="hive-badge ${t}">${t}</span>
+          ${nc?'<span class="compliance-dot"></span>':''}
           <span class="hive-bee-ct tabnum">${ct}</span>
         </button>`;
       }).join('');
@@ -1309,8 +1620,8 @@ input[type="text"]::placeholder{color:var(--text3)}
     }
     const b=beeLifeData,s=b.summary||{},git=b.git||{},claude=b.claude||{};
     const row=((sel&&sel.bees)||[]).find(x=>x.name===b.name);
-    const liveState=row?(row.active?(row.task==='idle'?'warn':'on'):'off'):'off';
-    const stateWord=liveState==='on'?'active':(liveState==='warn'?'idle':'asleep');
+    const liveState=row?(row.active?(row.task==='working'?'warn':'on'):'off'):'off';
+    const stateWord=liveState==='on'?'active':(liveState==='warn'?'working':'asleep');
     const counts={
       timeline:(b.timeline||[]).length,git:(git.commits||[]).length+(git.prs||[]).length,
       files:(b.files||[]).length,decisions:(b.decisions||[]).length,
@@ -1558,7 +1869,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     const isRepo=h.type!=='brain';
 
     const activeCt=bees.filter(x=>x.active).length;
-    const idleCt=bees.filter(x=>x.active&&x.task==='idle').length;
+    const idleCt=bees.filter(x=>x.active&&x.task==='working').length;
     const liveCost=bees.reduce((sum,x)=>sum+((x.current&&x.current.cost)||0),0);
 
     let o='<div class="page-head"><div class="page-head-main">';
@@ -1574,10 +1885,26 @@ input[type="text"]::placeholder{color:var(--text3)}
     </div>`;
     o+='</div>';
 
+    if(h.compliance&&!h.compliance.compliant){
+      const issues=h.compliance.issues||[];
+      const nonCompliantCount=hives.filter(x=>x.compliance&&!x.compliance.compliant).length;
+      o+=`<div class="compliance-banner">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1L1 14h14L8 1z" stroke-linejoin="round"/><path d="M8 6v3.5" stroke-linecap="round"/><circle cx="8" cy="12" r=".7" fill="currentColor" stroke="none"/></svg>
+        <div class="compliance-body">
+          <div class="compliance-title">Not Queen-compliant</div>
+          <ul class="compliance-issues">${issues.map(i=>'<li>'+esc(i.message)+'</li>').join('')}</ul>
+          <div class="compliance-actions">
+            <button class="btn btn-accent btn-sm" onclick="window._fixCompliance('${esc(h.name)}')">Fix this hive</button>
+            ${nonCompliantCount>1?'<button class="btn btn-outline btn-sm" onclick="window._fixAllCompliance()">Fix all '+nonCompliantCount+' hives</button>':''}
+          </div>
+        </div>
+      </div>`;
+    }
+
     o+=`<div class="hstats">
       <div class="hstat"><span class="hstat-val">${bees.length}</span><span class="hstat-label">Bees</span></div>
       <div class="hstat${activeCt?' on':''}"><span class="hstat-val"><span class="bee-dot ${activeCt?'on':'off'}"></span>${activeCt}</span><span class="hstat-label">Active</span></div>
-      <div class="hstat${idleCt?' warn':''}"><span class="hstat-val">${idleCt}</span><span class="hstat-label">Idle</span></div>
+      <div class="hstat${idleCt?' warn':''}"><span class="hstat-val">${idleCt}</span><span class="hstat-label">No claim</span></div>
       <div class="hstat"><span class="hstat-val">$${liveCost.toFixed(2)}</span><span class="hstat-label">Session cost</span></div>
     </div>`;
 
@@ -1588,10 +1915,10 @@ input[type="text"]::placeholder{color:var(--text3)}
       o+='<div class="bee-grid">';
       for(const b of bees){
         const on=b.active;
-        const isIdle=b.task==='idle';
+        const isWorking=b.task==='working';
         const current=b.current;
-        const dotClass=on?(isIdle?'warn':'on'):'off';
-        const cardClass=on?(isIdle?'active idle':'active'):'asleep';
+        const dotClass=on?(isWorking?'warn':'on'):'off';
+        const cardClass=on?(isWorking?'active idle':'active'):'asleep';
         o+=`<div class="bee-card ${cardClass}" onclick="window._openBee('${esc(b.name)}')">
           <div class="bee-actions">
             <button class="bee-launch" onclick="event.stopPropagation();doLaunch('${esc(b.name)}')" aria-label="Launch ${esc(b.name)}" title="Launch">&#9654;</button>
@@ -1623,6 +1950,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       <button class="tab-btn${activeTab==='brain'?' active':''}" onclick="window._tab('brain')">Brain</button>
       <button class="tab-btn${activeTab==='journal'?' active':''}" onclick="window._tab('journal')">Journal</button>
       <button class="tab-btn${activeTab==='profile'?' active':''}" onclick="window._tab('profile')">Profile</button>
+      <button class="tab-btn${activeTab==='queen'?' active':''}" onclick="window._tab('queen')">Queen</button>
       <div class="md-toggle">
         <button class="${mdMode==='rendered'?'active':''}" onclick="window._mdMode('rendered')">Rendered</button>
         <button class="${mdMode==='raw'?'active':''}" onclick="window._mdMode('raw')">Raw</button>
@@ -1646,6 +1974,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       o+=`<div class="tab-content${activeTab==='journal'?' active':''}" data-tab="journal"><div class="md-display rendered" id="journalContent">${renderMd(tabCache.journal||'')}</div></div>`;
       o+=`<div class="tab-content${activeTab==='profile'?' active':''}" data-tab="profile"><div class="md-display rendered" id="profileContent">${renderMd(tabCache.profile||'')}</div></div>`;
     }
+    o+=`<div class="tab-content${activeTab==='queen'?' active':''}" data-tab="queen"><div id="queenPanel">${tabCache.queen||''}</div></div>`;
     o+='</div></div>';
 
     $('hiveView').innerHTML=o;
@@ -1692,8 +2021,112 @@ input[type="text"]::placeholder{color:var(--text3)}
       const d=await api(`/api/hives/${name}/profile`);
       tabCache.profile=d.content||'';
       applyMdContent('profileContent',tabCache.profile);
+    } else if(t==='queen'){
+      renderQueenPanel();
     }
   }
+
+  async function renderQueenPanel(){
+    const el=$('queenPanel');
+    if(!el||!sel)return;
+    const hiveName=sel.name;
+    if(!el.children.length) el.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner"></span></div>';
+    try{
+      const [qs,hs]=await Promise.all([
+        api('/api/queen/status'),
+        api(`/api/queen/hive/${encodeURIComponent(hiveName)}`)
+      ]);
+      let o='<div class="queen-grid">';
+
+      // Status bar
+      const statusColor=qs.alive?'var(--ok)':'var(--err)';
+      o+=`<div class="queen-status-bar">
+        <span class="queen-dot" style="background:${statusColor}"></span>
+        <strong>${qs.alive?'Queen Active':'Queen Inactive'}</strong>
+        <span class="queen-meta">Uptime ${fmtDur(qs.uptime)} · ${qs.auditCount} audits · ${qs.bees} bees tracked</span>
+      </div>`;
+
+      // Escalations
+      const escEntries=Object.entries(hs.escalations||{});
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Escalations<span class="section-count">${escEntries.length}</span></div>`;
+      if(escEntries.length===0) o+='<div class="queen-empty">No active escalations</div>';
+      else for(const [bee,esc] of escEntries){
+        const lvlClass='esc-'+esc.level;
+        o+=`<div class="queen-esc-row ${lvlClass}"><span class="esc-level">${esc.level}</span><span class="esc-bee">${esc.bee}</span><span class="esc-reason">${esc.reason}</span></div>`;
+      }
+      o+='</div>';
+
+      // Drones
+      const drones=hs.drones||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Drones<span class="section-count">${drones.length}</span></div>`;
+      if(drones.length===0) o+='<div class="queen-empty">No drone activity</div>';
+      else for(const d of drones){
+        const sc=d.status==='running'?'var(--accent)':d.status==='completed'?'var(--ok)':'var(--err)';
+        o+=`<div class="queen-drone-row"><span class="drone-dot" style="background:${sc}"></span><span class="drone-id">${d.id}</span><span class="drone-bee">${d.bee}</span><span class="drone-task">${esc(d.task)}</span></div>`;
+      }
+      o+='</div>';
+
+      // Brain audit
+      const brain=hs.brain;
+      if(brain){
+        const cands=brain.extractCandidates||[];
+        o+=`<div class="queen-section"><div class="queen-section-hdr">Brain Audit<span class="section-count">${brain.totalLines} lines</span></div>`;
+        if(cands.length>0){
+          o+='<div class="queen-warn">Sections exceeding threshold:</div>';
+          for(const c of cands) o+=`<div class="queen-brain-row"><span class="brain-section">${esc(c.title)}</span><span class="brain-lines">${c.lines} lines</span></div>`;
+        } else o+='<div class="queen-empty">All sections within limits</div>';
+        o+='</div>';
+      }
+
+      // Royal Decree
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Royal Decree</div>
+        <div class="decree-box">
+          <textarea id="decreeInput" class="decree-area" placeholder="Broadcast a message to all bees..."></textarea>
+          <button class="btn btn-accent btn-sm" onclick="window._sendDecree()">Broadcast</button>
+        </div></div>`;
+
+      // Recent events
+      const events=hs.events||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Event Log<span class="section-count">${events.length}</span></div>`;
+      if(events.length===0) o+='<div class="queen-empty">No events recorded</div>';
+      else{
+        o+='<div class="queen-events">';
+        for(const ev of events.slice(0,30)){
+          const time=ev.at?new Date(ev.at).toLocaleTimeString():'';
+          o+=`<div class="queen-event"><span class="ev-time">${time}</span><span class="ev-type ev-${ev.type}">${ev.type}</span>`;
+          if(ev.bee) o+=`<span class="ev-bee">${ev.bee}</span>`;
+          if(ev.reason) o+=`<span class="ev-detail">${esc(ev.reason).substring(0,80)}</span>`;
+          else if(ev.message) o+=`<span class="ev-detail">${esc(ev.message).substring(0,80)}</span>`;
+          else if(ev.summary) o+=`<span class="ev-detail">${esc(ev.summary).substring(0,80)}</span>`;
+          else if(ev.result) o+=`<span class="ev-detail">${esc(ev.result).substring(0,80)}</span>`;
+          o+='</div>';
+        }
+        o+='</div>';
+      }
+      o+='</div></div>';
+      tabCache.queen=o;
+      const target=$('queenPanel');
+      if(target)target.innerHTML=o;
+    }catch(e){ const target=$('queenPanel'); if(target)target.innerHTML='<div class="queen-empty">Queen not available</div>'; }
+  }
+
+  function fmtDur(s){
+    if(s<60)return s+'s';
+    if(s<3600)return Math.floor(s/60)+'m';
+    return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
+  }
+
+  window._sendDecree=async function(){
+    if(!sel)return;
+    const msg=$('decreeInput').value.trim();
+    if(!msg)return;
+    try{
+      await api('/api/queen/decree',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hive:sel.name,message:msg})});
+      $('decreeInput').value='';
+      toast('Decree broadcast','ok');
+      renderQueenPanel();
+    }catch(e){toast('Failed to broadcast','err');}
+  };
 
   window.saveBrain=async function(){
     if(!sel)return;
@@ -1868,7 +2301,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     $('destroySubmit').innerHTML='<span class="spinner"></span>';
     try{
       const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/destroy/${encodeURIComponent(destroyBee)}`,{method:'POST'});
-      toast(d.output||'Bee destroyed','ok');
+      toast('Bee destroyed',d.output||destroyBee+' removed','ok');
       closeDestroyModal();
       await refreshHives();
     }catch(e){toast('Destroy failed','err');}
@@ -1877,29 +2310,64 @@ input[type="text"]::placeholder{color:var(--text3)}
   };
 
   // ── Actions ──
+  function _complianceIssues(h){
+    if(!h)return [{type:'unknown',message:'Hive not found'}];
+    if(!h.compliance)return [{type:'unknown',message:'Compliance data unavailable - restart fleet serve'}];
+    return h.compliance.issues||[];
+  }
   window.doDoctor=async function(){
     if(!sel)return;toast('Running doctor...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);toast(d.output||'Doctor complete','ok');}
-    catch(e){toast('Doctor failed','err');}
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/doctor`);await refreshHives();_updateDoctorFromHives();
+      const h=hives.find(x=>x.name===sel.name);
+      const issues=_complianceIssues(h);
+      if(!issues.length){toast('Doctor complete',sel.name+' is healthy','ok');}
+      else{
+        toast('Doctor - '+issues.length+' issue'+(issues.length>1?'s':''),issues.map(i=>i.message).join('\n'),'err');
+        if(!_doctorOpen){_doctorOpen=true;$('doctorPanel').classList.add('open');_updateDoctorFromHives();}
+      }
+    }catch(e){toast('Doctor failed',e.message||'Unknown error','err');}
+  };
+  window._fixCompliance=async function(hiveName){
+    toast('Fixing '+hiveName+'...','info');
+    try{await api(`/api/hives/${encodeURIComponent(hiveName)}/doctor`);await refreshHives();_updateDoctorFromHives();
+      const h=hives.find(x=>x.name===hiveName);
+      const issues=_complianceIssues(h);
+      if(!issues.length){toast(hiveName+' fixed','Hive is now compliant','ok');}
+      else{toast(hiveName+' - '+issues.length+' issue'+(issues.length>1?'s':'')+' remain',issues.map(i=>i.message).join('\n'),'err');}
+    }catch(e){toast('Fix failed',e.message||'Could not fix '+hiveName,'err');}
+  };
+  window._fixAllCompliance=async function(){
+    toast('Fixing all hives...','info');
+    try{
+      const d=await api('/api/queen/doctor-all',{method:'POST'});
+      await refreshHives();_updateDoctorFromHives();
+      const ok=d.results.filter(r=>r.ok).length;
+      const failed=d.results.filter(r=>!r.ok);
+      const remaining=hives.filter(h=>h.compliance&&!h.compliance.compliant).length;
+      let body=ok+'/'+d.results.length+' hives processed';
+      if(remaining)body+='\n'+remaining+' still need attention';
+      if(failed.length)body+='\nFailed: '+failed.map(f=>f.hive).join(', ');
+      toast('Bulk fix complete',body,remaining||failed.length?'err':'ok');
+    }catch(e){toast('Bulk fix failed',e.message||'Unknown error','err');}
   };
   window.doClean=async function(){
     if(!sel)return;toast('Cleaning...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/clean`,{method:'POST'});toast(d.output||'Clean complete','ok');await refreshHives();}
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/clean`,{method:'POST'});toast('Clean complete',sel.name+' cleaned up','ok');await refreshHives();}
     catch(e){toast('Clean failed','err');}
   };
   window.doScan=async function(){
     toast('Scanning...','info');
-    try{const d=await api('/api/scan',{method:'POST'});toast(d.output||'Scan complete','ok');await Promise.all([refreshHives(),refreshStrays()]);}
+    try{await api('/api/scan',{method:'POST'});await Promise.all([refreshHives(),refreshStrays()]);toast('Scan complete',hives.length+' hives, '+strays.length+' strays found','ok');}
     catch(e){toast('Scan failed','err');}
   };
   window.doLaunch=async function(bee){
-    if(!sel)return;toast(`Launching ${bee}...`,'info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/launch/${encodeURIComponent(bee)}`,{method:'POST'});toast(d.output||`Launched ${bee}`,'ok');}
+    if(!sel)return;toast('Launching '+bee+'...','info');
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/launch/${encodeURIComponent(bee)}`,{method:'POST'});toast('Launched',bee+' session opened','ok');}
     catch(e){toast('Launch failed','err');}
   };
   window.doLaunchAll=async function(){
     if(!sel)return;toast('Launching all bees...','info');
-    try{const d=await api(`/api/hives/${encodeURIComponent(sel.name)}/launch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});toast(d.output||'All bees launched','ok');}
+    try{await api(`/api/hives/${encodeURIComponent(sel.name)}/launch`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({all:true})});toast('All launched','All bees in '+sel.name+' opened','ok');}
     catch(e){toast('Launch failed','err');}
   };
 
@@ -2077,6 +2545,8 @@ input[type="text"]::placeholder{color:var(--text3)}
       _intervals.push(setInterval(refreshStrays,30000));
       _intervals.push(setInterval(refreshAccounts,10000));
       _intervals.push(setInterval(refreshBeeLife,15000));
+      _intervals.push(setInterval(()=>{if(activeTab==='queen')renderQueenPanel();},10000));
+      _intervals.push(setInterval(refreshNotifs,10000));
     },4000);
   }
 
@@ -2105,6 +2575,10 @@ input[type="text"]::placeholder{color:var(--text3)}
       const sb=$('sidebar');
       if(sb.classList.contains('open')&&!sb.contains(e.target)&&!e.target.closest('.menu-btn'))sb.classList.remove('open');
     }
+  });
+
+  document.addEventListener('click',function(e){
+    if(_notifOpen&&!e.target.closest('.notif-panel')&&!e.target.closest('.notif-btn')){_notifOpen=false;$('notifPanel').classList.remove('open');}
   });
 
   document.addEventListener('click',function(e){
@@ -2158,6 +2632,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       const j=JSON.stringify(data);
       if(j!==JSON.stringify(hives)){
         hives=data;
+        _doctorIssueCount=hives.filter(h=>h.compliance&&!h.compliance.compliant).length;
         renderSidebar();
         if(sel){
           const u=hives.find(h=>h.name===sel.name);
@@ -2167,6 +2642,7 @@ input[type="text"]::placeholder{color:var(--text3)}
             if(tabCache.profile!=null&&$('profileContent'))$('profileContent').textContent=tabCache.profile;
           } else {sel=null;renderHiveView();}
         }
+        if(_doctorOpen)_updateDoctorFromHives();
       }
     }catch(e){}
   }
@@ -2200,7 +2676,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   async function init(){
     renderPills();
-    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts()]);
+    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts(),refreshNotifs()]);
     $('searchInput').addEventListener('input',triggerSearch);
     const hashParts=location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
     if(hashParts.length){
@@ -2217,6 +2693,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     _intervals.push(setInterval(refreshStrays,30000));
     _intervals.push(setInterval(refreshAccounts,10000));
     _intervals.push(setInterval(refreshBeeLife,15000));
+    _intervals.push(setInterval(()=>{if(activeTab==='queen')renderQueenPanel();},10000));
   }
   init();
 })();
