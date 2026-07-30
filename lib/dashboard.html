@@ -1229,8 +1229,8 @@ input[type="text"]::placeholder{color:var(--text3)}
     const results=hives.map(h=>({
       name:h.name,
       path:h.path||'',
-      compliant:h.compliance?h.compliance.compliant:true,
-      issues:h.compliance?h.compliance.issues||[]:[],
+      compliant:h.compliance?h.compliance.compliant:false,
+      issues:h.compliance?h.compliance.issues||[]:[{type:'unknown',message:'Compliance data unavailable - restart fleet serve'}],
     }));
     _doctorResults=results;
     _doctorIssueCount=results.filter(r=>!r.compliant).length;
@@ -1620,8 +1620,8 @@ input[type="text"]::placeholder{color:var(--text3)}
     }
     const b=beeLifeData,s=b.summary||{},git=b.git||{},claude=b.claude||{};
     const row=((sel&&sel.bees)||[]).find(x=>x.name===b.name);
-    const liveState=row?(row.active?(row.task==='idle'?'warn':'on'):'off'):'off';
-    const stateWord=liveState==='on'?'active':(liveState==='warn'?'idle':'asleep');
+    const liveState=row?(row.active?(row.task==='working'?'warn':'on'):'off'):'off';
+    const stateWord=liveState==='on'?'active':(liveState==='warn'?'working':'asleep');
     const counts={
       timeline:(b.timeline||[]).length,git:(git.commits||[]).length+(git.prs||[]).length,
       files:(b.files||[]).length,decisions:(b.decisions||[]).length,
@@ -1869,7 +1869,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     const isRepo=h.type!=='brain';
 
     const activeCt=bees.filter(x=>x.active).length;
-    const idleCt=bees.filter(x=>x.active&&x.task==='idle').length;
+    const idleCt=bees.filter(x=>x.active&&x.task==='working').length;
     const liveCost=bees.reduce((sum,x)=>sum+((x.current&&x.current.cost)||0),0);
 
     let o='<div class="page-head"><div class="page-head-main">';
@@ -1904,7 +1904,7 @@ input[type="text"]::placeholder{color:var(--text3)}
     o+=`<div class="hstats">
       <div class="hstat"><span class="hstat-val">${bees.length}</span><span class="hstat-label">Bees</span></div>
       <div class="hstat${activeCt?' on':''}"><span class="hstat-val"><span class="bee-dot ${activeCt?'on':'off'}"></span>${activeCt}</span><span class="hstat-label">Active</span></div>
-      <div class="hstat${idleCt?' warn':''}"><span class="hstat-val">${idleCt}</span><span class="hstat-label">Idle</span></div>
+      <div class="hstat${idleCt?' warn':''}"><span class="hstat-val">${idleCt}</span><span class="hstat-label">No claim</span></div>
       <div class="hstat"><span class="hstat-val">$${liveCost.toFixed(2)}</span><span class="hstat-label">Session cost</span></div>
     </div>`;
 
@@ -1915,10 +1915,10 @@ input[type="text"]::placeholder{color:var(--text3)}
       o+='<div class="bee-grid">';
       for(const b of bees){
         const on=b.active;
-        const isIdle=b.task==='idle';
+        const isWorking=b.task==='working';
         const current=b.current;
-        const dotClass=on?(isIdle?'warn':'on'):'off';
-        const cardClass=on?(isIdle?'active idle':'active'):'asleep';
+        const dotClass=on?(isWorking?'warn':'on'):'off';
+        const cardClass=on?(isWorking?'active idle':'active'):'asleep';
         o+=`<div class="bee-card ${cardClass}" onclick="window._openBee('${esc(b.name)}')">
           <div class="bee-actions">
             <button class="bee-launch" onclick="event.stopPropagation();doLaunch('${esc(b.name)}')" aria-label="Launch ${esc(b.name)}" title="Launch">&#9654;</button>
@@ -2311,8 +2311,9 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   // ── Actions ──
   function _complianceIssues(h){
-    if(!h||!h.compliance||!h.compliance.issues)return [];
-    return h.compliance.issues;
+    if(!h)return [{type:'unknown',message:'Hive not found'}];
+    if(!h.compliance)return [{type:'unknown',message:'Compliance data unavailable - restart fleet serve'}];
+    return h.compliance.issues||[];
   }
   window.doDoctor=async function(){
     if(!sel)return;toast('Running doctor...','info');
