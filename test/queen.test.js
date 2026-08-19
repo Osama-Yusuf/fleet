@@ -196,7 +196,7 @@ test('hiveConfig returns defaults when no config file exists', t => {
   const q = makeQueen(hive);
   const cfg = q.hiveConfig(hive);
   assert.equal(cfg.audit_interval_s, 15);
-  assert.equal(cfg.escalation.warning_s, 30);
+  assert.equal(cfg.escalation.warning_s, 120);
   assert.equal(cfg.brain.section_max_lines, 50);
 });
 
@@ -510,4 +510,173 @@ test('disconnect grace is cancelled if bee reconnects before assessment', t => {
   if (grace) grace.assessAt = Date.now() - 1000;
   q.handleDisconnectGrace();
   assert.equal(q.getNotifications({ pending: true }).length, 0, 'no notification if reconnected');
+});
+
+// ── Brain versioning ──
+
+test('extractCoordinationSection returns just the coordination block without stamp', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const content = [
+    '# My Project',
+    '',
+    '## Coordination (Queen-managed)',
+    '<!-- fleet-brain build:abc12345 synced:2026-08-18 -->',
+    '',
+    'Some coordination rules here.',
+    'More rules.',
+    '',
+    '## Other Section',
+    'Other content.',
+  ].join('\n');
+  const section = q.extractCoordinationSection(content);
+  assert.ok(section);
+  assert.ok(section.includes('Some coordination rules here'));
+  assert.ok(!section.includes('fleet-brain build:'), 'stamp should be stripped');
+  assert.ok(!section.includes('## Other Section'), 'should not include next section');
+});
+
+test('extractCoordinationSection returns null when no coordination section', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  assert.equal(q.extractCoordinationSection('# Just a project\nNo coordination here.\n'), null);
+});
+
+test('hiveCoordinationVersion returns consistent hash for same content', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const coord = '## Coordination (Queen-managed)\nRule 1\nRule 2\n';
+  fs.writeFileSync(path.join(hive, 'CLAUDE.md'), '# Test\n' + coord);
+  const v1 = q.hiveCoordinationVersion(hive);
+  assert.ok(v1);
+  assert.equal(v1.length, 8);
+  const v2 = q.hiveCoordinationVersion(hive);
+  assert.equal(v1, v2, 'same content should produce same hash');
+});
+
+test('hiveCoordinationVersion ignores stamp differences', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  fs.writeFileSync(path.join(hive, 'CLAUDE.md'),
+    '# Test\n## Coordination (Queen-managed)\n<!-- fleet-brain build:aaaa synced:2026-01-01 -->\nRule 1\n');
+  const v1 = q.hiveCoordinationVersion(hive);
+  fs.writeFileSync(path.join(hive, 'CLAUDE.md'),
+    '# Test\n## Coordination (Queen-managed)\n<!-- fleet-brain build:bbbb synced:2026-12-31 -->\nRule 1\n');
+  const v2 = q.hiveCoordinationVersion(hive);
+  assert.equal(v1, v2, 'different stamps should produce same hash');
+});
+
+test('hiveCoordinationVersion returns null when no coordination section', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  fs.writeFileSync(path.join(hive, 'CLAUDE.md'), '# Test\nNo coordination.\n');
+  assert.equal(q.hiveCoordinationVersion(hive), null);
+});
+
+test('brainCoordinationVersion returns hash of the template', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const v = q.brainCoordinationVersion();
+  assert.ok(v);
+  assert.equal(v.length, 8);
+});
+
+// ── Legacy coordination stripping ──
+
+test('stripLegacyCoordination removes old fleet-managed section', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const content = [
+    '# Project',
+    '',
+    '## Session Coordination (fleet-managed)',
+    'Old rules here.',
+    'More old rules.',
+    '',
+    '## Other Section',
+    'Keep this.',
+  ].join('\n');
+  const result = q.stripLegacyCoordination(content);
+  assert.ok(!result.includes('Session Coordination'), 'legacy section should be removed');
+  assert.ok(!result.includes('Old rules here'), 'legacy content should be removed');
+  assert.ok(result.includes('## Other Section'), 'other sections should remain');
+  assert.ok(result.includes('Keep this'), 'other content should remain');
+});
+
+test('stripLegacyCoordination returns content unchanged when no legacy section', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const content = '# Project\n## Normal Section\nContent.\n';
+  assert.equal(q.stripLegacyCoordination(content), content);
+});
+
+// ── Lease pruning ──
+
+test('pruneExpiredLeases removes expired lease files', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  const leaseDir = path.join(hive, '.fleet', 'leases');
+  fs.mkdirSync(leaseDir, { recursive: true });
+  fs.writeFileSync(path.join(leaseDir, 'res1.json'), JSON.stringify({
+    resource: 'res1', owner: 'bee1', hive,
+    claimedAt: new Date(Date.now() - 600000).toISOString(),
+    leaseSeconds: 300,
+  }));
+  fs.writeFileSync(path.join(leaseDir, 'res2.json'), JSON.stringify({
+    resource: 'res2', owner: 'bee2', hive,
+    claimedAt: new Date().toISOString(),
+    leaseSeconds: 300,
+  }));
+  q.pruneExpiredLeases(hive);
+  assert.ok(!fs.existsSync(path.join(leaseDir, 'res1.json')), 'expired lease should be removed');
+  assert.ok(fs.existsSync(path.join(leaseDir, 'res2.json')), 'active lease should remain');
+});
+
+test('activeLeaseCount returns count of lease files', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  assert.equal(q.activeLeaseCount(), 0);
+  const leaseDir = path.join(hive, '.fleet', 'leases');
+  fs.mkdirSync(leaseDir, { recursive: true });
+  fs.writeFileSync(path.join(leaseDir, 'r1.json'), '{}');
+  fs.writeFileSync(path.join(leaseDir, 'r2.json'), '{}');
+  assert.equal(q.activeLeaseCount(), 2);
+});
+
+// ── getStatus enrichments ──
+
+test('getStatus includes beeDetails and escalationDetails', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  q.recordHeartbeat('bee1', hive);
+  q.escalate('bee1', hive, 'test reason', DEFAULT_CONFIG);
+  const status = q.getStatus();
+  assert.ok(Array.isArray(status.beeDetails));
+  assert.equal(status.beeDetails.length, 1);
+  assert.equal(status.beeDetails[0].bee, 'bee1');
+  assert.ok(status.beeDetails[0].lastSeen >= 0);
+  assert.ok(Array.isArray(status.escalationDetails));
+  assert.equal(status.escalationDetails.length, 1);
+  assert.equal(status.escalationDetails[0].level, 'notice');
+  assert.equal(status.escalationDetails[0].reason, 'test reason');
+});
+
+// ── Idle/done claim detection ──
+
+test('auditHive escalates claims containing idle/done/complete/awaiting', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'done with task\n');
+  q.auditHive(hive);
+  assert.equal(q.getStatus().escalations, 1);
+  const events = q.recentEvents(hive, 10);
+  assert.ok(events.some(e => e.type === 'escalation'));
+});
+
+test('auditHive escalates complete keyword in claim', t => {
+  const hive = makeHive(t);
+  const q = makeQueen(hive);
+  fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'Task complete\n');
+  q.auditHive(hive);
+  assert.equal(q.getStatus().escalations, 1);
 });

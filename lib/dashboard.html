@@ -321,6 +321,8 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 @keyframes bee-hover{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
 @keyframes wing-buzz{from{transform:scaleY(1) rotate(-6deg)}to{transform:scaleY(.5) rotate(4deg)}}
 .bee-label{font-family:var(--mono);font-weight:700;font-size:.875rem;letter-spacing:-.01em}
+.bee-seen{font-size:.5625rem;color:var(--text3);margin-left:auto;font-weight:400}
+.bee-seen.stale{color:var(--amber)}
 .bee-task{font-size:.75rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .bee-sync-badge{font-size:.625rem;font-family:var(--mono);color:var(--amber);background:color-mix(in srgb,var(--amber) 12%,transparent);border:1px solid color-mix(in srgb,var(--amber) 30%,transparent);border-radius:4px;padding:2px 7px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bee-branch{font-family:var(--mono);font-size:.625rem;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
@@ -1938,7 +1940,7 @@ input[type="text"]::placeholder{color:var(--text3)}
             <button class="bee-launch" onclick="event.stopPropagation();doLaunch('${esc(b.name)}')" aria-label="Launch ${esc(b.name)}" title="Launch">&#9654;</button>
             <button class="bee-destroy" onclick="event.stopPropagation();openDestroyModal('${esc(b.name)}')" aria-label="Destroy ${esc(b.name)}" title="Destroy">&times;</button>
           </div>
-          <div class="bee-top"><span class="bee-dot ${dotClass}"></span><span class="bee-label">${esc(b.name)}</span></div>
+          <div class="bee-top"><span class="bee-dot ${dotClass}"></span><span class="bee-label">${esc(b.name)}</span>${b.lastSeen!=null?`<span class="bee-seen${b.lastSeen>180?' stale':''}" title="Last heartbeat">${b.lastSeen<60?b.lastSeen+'s':Math.round(b.lastSeen/60)+'m'} ago</span>`:''}</div>
           <div class="bee-task" title="${esc(b.task||'')}">${esc(b.task||'asleep')}</div>`;
         if(b.syncNeeded) o+=`<div class="bee-sync-badge" title="${esc(b.syncNeeded)}">⟳ ${esc(b.syncNeeded.replace(/^Sync needed - /,''))}</div>`;
         if(b.branch||current){

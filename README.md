@@ -178,7 +178,7 @@ flowchart TB
 - **Detects bee death** - when a known bee stops pinging (heartbeat stale >120s), the Queen logs a disconnect event and flags the open claim. When it pings again, a reconnect is logged
 - **Audits claims every 15s** - detects idle, done, or stale claim files that bees forgot to release
 - **Detects file conflicts** - warns when two bees are editing the same files via `git diff` overlap detection
-- **Graduates escalation** - notice -> warning -> directive -> override, giving bees a chance to self-correct before the Queen acts
+- **Graduates escalation** - notice (3min) -> warning (5min) -> directive (8min) -> override (13min), giving bees plenty of time to self-correct before the Queen acts
 - **Injects via tmux** - sends instructions directly into a bee's Claude session when it runs in tmux
 - **Cleans up directly** - at override level, the Queen deletes stale claim files and journals the cleanup
 - **Syncs git per branch** - fetches origin, checks each bee against its own upstream tracking branch (not hardcoded main). Clean tree? Auto-rebase. Dirty tree? Notifies the bee via inbox + tmux
@@ -234,9 +234,9 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    N["Notice<br/><i>immediate</i>"] -->|30s| W["Warning<br/><i>inbox message</i>"]
-    W -->|2min| D["Directive<br/><i>tmux injection</i>"]
-    D -->|5min| O["Override<br/><i>claim deleted</i>"]
+    N["Notice<br/><i>3min no ping</i>"] -->|+2min| W["Warning<br/><i>inbox message</i>"]
+    W -->|+3min| D["Directive<br/><i>tmux injection</i>"]
+    D -->|+5min| O["Override<br/><i>claim deleted</i>"]
 
     classDef notice fill:#fef3c7,stroke:#f59e0b,color:#111827
     classDef warn fill:#fed7aa,stroke:#f97316,color:#111827

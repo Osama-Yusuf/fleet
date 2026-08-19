@@ -1730,6 +1730,13 @@ cmd_queen() {
     leases=$(echo "$resp" | jq -r '.leases // 0')
     printf "\033[33m♛ Queen active\033[0m - uptime %ss, %s audits, %s bees, %s escalations, %s leases\n" "$uptime" "$audits" "$bees" "$escs" "$leases"
 
+    local bee_count
+    bee_count=$(echo "$resp" | jq -r '.beeDetails | length')
+    if [[ "$bee_count" -gt 0 ]]; then
+      printf "\n  \033[32mConnected bees:\033[0m\n"
+      echo "$resp" | jq -r '.beeDetails[] | "  \(.bee)\t\(.hive)\t\(if .disconnected then "dead" elif .lastSeen < 60 then "alive" else "stale \(.lastSeen)s" end)\t\(.task // "-")"' | column -t -s $'\t'
+    fi
+
     local esc_count
     esc_count=$(echo "$resp" | jq -r '.escalationDetails | length')
     if [[ "$esc_count" -gt 0 ]]; then
