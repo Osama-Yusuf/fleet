@@ -1940,7 +1940,7 @@ input[type="text"]::placeholder{color:var(--text3)}
             <button class="bee-launch" onclick="event.stopPropagation();doLaunch('${esc(b.name)}')" aria-label="Launch ${esc(b.name)}" title="Launch">&#9654;</button>
             <button class="bee-destroy" onclick="event.stopPropagation();openDestroyModal('${esc(b.name)}')" aria-label="Destroy ${esc(b.name)}" title="Destroy">&times;</button>
           </div>
-          <div class="bee-top"><span class="bee-dot ${dotClass}"></span><span class="bee-label">${esc(b.name)}</span>${b.lastSeen!=null?`<span class="bee-seen${b.lastSeen>180?' stale':''}" title="Last heartbeat">${b.lastSeen<60?b.lastSeen+'s':Math.round(b.lastSeen/60)+'m'} ago</span>`:''}</div>
+          <div class="bee-top"><span class="bee-dot ${dotClass}"></span><span class="bee-label">${esc(b.name)}</span>${b.lastSeen!=null?`<span class="bee-seen${b.lastSeen>300?' stale':''}" title="Last heartbeat">${b.lastSeen<60?b.lastSeen+'s':Math.round(b.lastSeen/60)+'m'} ago</span>`:''}</div>
           <div class="bee-task" title="${esc(b.task||'')}">${esc(b.task||'asleep')}</div>`;
         if(b.syncNeeded) o+=`<div class="bee-sync-badge" title="${esc(b.syncNeeded)}">⟳ ${esc(b.syncNeeded.replace(/^Sync needed - /,''))}</div>`;
         if(b.branch||current){

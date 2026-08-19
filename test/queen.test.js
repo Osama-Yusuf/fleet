@@ -196,7 +196,7 @@ test('hiveConfig returns defaults when no config file exists', t => {
   const q = makeQueen(hive);
   const cfg = q.hiveConfig(hive);
   assert.equal(cfg.audit_interval_s, 15);
-  assert.equal(cfg.escalation.warning_s, 120);
+  assert.equal(cfg.escalation.warning_s, 300);
   assert.equal(cfg.brain.section_max_lines, 50);
 });
 
@@ -328,7 +328,7 @@ test('bee disconnect is detected when heartbeat goes stale', t => {
   const q = makeQueen(hive);
   const k = `${hive}::bee1`;
   // Simulate a bee that pinged 5 minutes ago (well past the 120s stale threshold)
-  q.heartbeats.set(k, { lastPing: Date.now() - 300000, bee: 'bee1', hive: hive, disconnected: false });
+  q.heartbeats.set(k, { lastPing: Date.now() - 600000, bee: 'bee1', hive: hive, disconnected: false });
   fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'Working on: something\n');
   q.auditHive(hive);
   const hb = q.heartbeats.get(k);
@@ -341,7 +341,7 @@ test('bee reconnect is logged when disconnected bee pings again', t => {
   const hive = makeHive(t);
   const q = makeQueen(hive);
   const k = `${hive}::bee1`;
-  q.heartbeats.set(k, { lastPing: Date.now() - 300000, bee: 'bee1', hive: hive, disconnected: true });
+  q.heartbeats.set(k, { lastPing: Date.now() - 600000, bee: 'bee1', hive: hive, disconnected: true });
   q.recordHeartbeat('bee1', hive);
   const events = q.recentEvents(hive, 10);
   assert.ok(events.some(e => e.type === 'bee_reconnect'));
@@ -487,7 +487,7 @@ test('disconnect triggers grace then assessment after timeout', t => {
   const hive = makeHive(t);
   const q = makeQueen(hive);
   const k = `${hive}::bee1`;
-  q.heartbeats.set(k, { lastPing: Date.now() - 300000, bee: 'bee1', hive: hive, disconnected: false });
+  q.heartbeats.set(k, { lastPing: Date.now() - 600000, bee: 'bee1', hive: hive, disconnected: false });
   fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'Working on: something\n');
   q.auditHive(hive);
   assert.equal(q._disconnectGrace.size, 1, 'should schedule grace timer');
@@ -503,7 +503,7 @@ test('disconnect grace is cancelled if bee reconnects before assessment', t => {
   const hive = makeHive(t);
   const q = makeQueen(hive);
   const k = `${hive}::bee1`;
-  q.heartbeats.set(k, { lastPing: Date.now() - 300000, bee: 'bee1', hive: hive, disconnected: true });
+  q.heartbeats.set(k, { lastPing: Date.now() - 600000, bee: 'bee1', hive: hive, disconnected: true });
   q.scheduleDisconnectAssessment('bee1', hive);
   q.recordHeartbeat('bee1', hive);
   const grace = q._disconnectGrace.get(k);
