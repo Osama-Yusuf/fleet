@@ -1729,6 +1729,13 @@ cmd_queen() {
     escs=$(echo "$resp" | jq -r '.escalations')
     leases=$(echo "$resp" | jq -r '.leases // 0')
     printf "\033[33m♛ Queen active\033[0m - uptime %ss, %s audits, %s bees, %s escalations, %s leases\n" "$uptime" "$audits" "$bees" "$escs" "$leases"
+
+    local esc_count
+    esc_count=$(echo "$resp" | jq -r '.escalationDetails | length')
+    if [[ "$esc_count" -gt 0 ]]; then
+      printf "\n  \033[31mActive escalations:\033[0m\n"
+      echo "$resp" | jq -r '.escalationDetails[] | "  \(.bee)\t\(.level)\t\(.elapsed)s\t\(.reason)"' | column -t -s $'\t'
+    fi
   else
     printf "\033[31m♛ Queen inactive\033[0m - start with: fleet serve\n"
   fi
