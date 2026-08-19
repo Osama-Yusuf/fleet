@@ -48,6 +48,8 @@ Running parallel Claude Code sessions gets real once you go past one.
 
 Fleet gives parallel sessions a shared foundation: one brain, isolated git clones, a dashboard that shows everything at a glance, and a Queen supervisor that keeps everything running.
 
+**What this looks like in practice:** bee2 starts a task, calls `fleet_claim`, and the Queen responds with file overlaps - bee1 already has 702 uncommitted lines across the same three files. bee2 stops itself: *"I'm not making these edits. Had I proceeded, I'd have duplicated in-flight work and guaranteed a three-file conflict. This is precisely what the claim step is for."* No human intervention needed.
+
 <br>
 
 ## How it works
@@ -172,14 +174,16 @@ flowchart TB
 
 ### What the Queen Does
 
-- **Onboards new bees** - first `fleet_ping` triggers checks: stale claim from a previous session? unread inbox? branch behind upstream? Issues are returned in the ping response so the bee can act immediately
+- **Onboards new bees** - first `fleet_ping` triggers checks: stale claim from a previous session? unread inbox? branch behind upstream? coordination outdated? Issues are returned in the ping response so the bee can act immediately
 - **Detects bee death** - when a known bee stops pinging (heartbeat stale >120s), the Queen logs a disconnect event and flags the open claim. When it pings again, a reconnect is logged
 - **Audits claims every 15s** - detects idle, done, or stale claim files that bees forgot to release
 - **Detects file conflicts** - warns when two bees are editing the same files via `git diff` overlap detection
-- **Graduates escalation** - notice → warning → directive → override, giving bees a chance to self-correct before the Queen acts
+- **Graduates escalation** - notice -> warning -> directive -> override, giving bees a chance to self-correct before the Queen acts
 - **Injects via tmux** - sends instructions directly into a bee's Claude session when it runs in tmux
 - **Cleans up directly** - at override level, the Queen deletes stale claim files and journals the cleanup
-- **Syncs git every 5min** - fetches origin, checks each bee's divergence. Clean tree? Auto-rebase. Dirty tree? Notifies the bee via inbox + tmux
+- **Syncs git per branch** - fetches origin, checks each bee against its own upstream tracking branch (not hardcoded main). Clean tree? Auto-rebase. Dirty tree? Notifies the bee via inbox + tmux
+- **Manages brain versioning** - hashes the coordination section of each hive's CLAUDE.md, detects when it's outdated vs. the latest template, and auto-syncs on startup
+- **Manages resource leases** - `fleet_lock`/`fleet_unlock` give bees exclusive access to shared resources (CLAUDE.md, configs). Expired leases are auto-pruned
 - **Broadcasts via tmux + inbox** - announcements reach active bees immediately via tmux, and are stored in inbox for offline bees
 - **Restructures the brain** - detects oversized CLAUDE.md sections (>50 lines) and extracts them to `docs/` with a pointer left behind
 - **Spawns review drones** - when a bee requests review, the Queen spawns a `claude --print` session to analyze the work
@@ -301,6 +305,9 @@ fleet destroy <bee>           # Remove a bee
 
 ```bash
 fleet brain                   # Edit the shared CLAUDE.md
+fleet brain status            # Show coordination version per hive
+fleet brain sync              # Sync coordination rules to all hives
+fleet brain sync --hive <n>   # Sync a single hive
 fleet journal                 # View the work log
 fleet artifact <file>         # Share a file across all bees (dedup + merge)
 ```
@@ -309,7 +316,7 @@ fleet artifact <file>         # Share a file across all bees (dedup + merge)
 
 ```bash
 fleet serve                   # Start dashboard + Queen supervisor
-fleet queen                   # Show Queen status
+fleet queen                   # Show Queen status (bees, leases, escalations)
 fleet announce "<message>"    # Royal decree - broadcast to all bees
 ```
 
@@ -400,6 +407,10 @@ Git worktrees forbid checking out the same branch in two worktrees simultaneousl
 ### Why MCP instead of file-based coordination?
 
 The original design used file-based rules that told bees to manually read/write `.fleet/active/` files. This drifted - bees would write "idle" to claim files instead of deleting them, skip reading rules entirely, or forget to clean up. MCP tools solve this by embedding the rules in tool descriptions (re-read on every call, immune to context compaction) and enforcing behavior at the protocol layer.
+
+### Why brain versioning?
+
+Each hive's `CLAUDE.md` contains a coordination section that the Queen manages. When the template changes (new rules, new tools), hives need to stay in sync. The Queen hashes just the coordination section content (ignoring stamps) and compares it against the template. `fleet brain status` shows version mismatches at a glance. `fleet brain sync` updates all hives. On startup, the Queen auto-syncs every registered hive.
 
 <br>
 

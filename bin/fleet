@@ -996,6 +996,18 @@ _open_bee_tab() {
   local dir="${hive}/${bee}"
   local claude_cmd="claude"
 
+  # Ensure MCP config exists
+  if [[ ! -f "$dir/.mcp.json" ]]; then
+    _setup_mcp_config "$hive" "$bee"
+  fi
+
+  # Warn if fleet serve isn't running (MCP tools won't connect)
+  local port
+  port=$(jq -r '.port // 3847' "$FLEET_GLOBAL_CONFIG" 2>/dev/null || echo 3847)
+  if ! curl -s "http://127.0.0.1:${port}/api/queen/status" >/dev/null 2>&1; then
+    warn "fleet serve is not running - MCP tools will be unavailable. Start with: fleet serve"
+  fi
+
   if _bee_has_sessions "$dir"; then
     claude_cmd="claude --continue"
   fi
@@ -1078,7 +1090,57 @@ cmd_clean() {
 #  JOURNAL / BRAIN
 # ════════════════════════════════════════════════════════
 cmd_journal() { local h; h=$(hive_root); ${EDITOR:-less} "$h/.fleet/journal.md"; }
-cmd_brain()   { local h; h=$(hive_root); ${EDITOR:-vim} "$h/CLAUDE.md"; }
+cmd_brain() {
+  local port
+  port=$(jq -r '.port // 3847' "$GLOBAL_CONFIG" 2>/dev/null || echo 3847)
+  local base="http://127.0.0.1:${port}"
+
+  case "${1:-edit}" in
+    edit)
+      local h; h=$(hive_root)
+      ${EDITOR:-vim} "$h/CLAUDE.md"
+      ;;
+    status)
+      local resp
+      resp=$(curl -s "$base/api/queen/brain/status" 2>/dev/null) || die "Cannot reach fleet serve at port $port"
+      local tmpl
+      tmpl=$(echo "$resp" | jq -r '.templateVersion')
+      printf "\033[33m♛ Brain coordination template:\033[0m %s\n\n" "$tmpl"
+      echo "$resp" | jq -r '.hives[] | "  \(.name)\t\(.version // "none")\t\(if .synced then "✓ synced" elif .version then "✗ outdated" else "✗ missing" end)"' | \
+        column -t -s $'\t'
+      ;;
+    sync)
+      local hive_name=""
+      shift
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --hive) hive_name="$2"; shift 2 ;;
+          *) shift ;;
+        esac
+      done
+      local resp
+      if [[ -n "$hive_name" ]]; then
+        resp=$(curl -s -X POST "$base/api/queen/brain/sync" \
+          -H "Content-Type: application/json" \
+          -d "{\"hive\":\"$hive_name\"}" 2>/dev/null) || die "Cannot reach fleet serve"
+      else
+        resp=$(curl -s -X POST "$base/api/queen/brain/sync" 2>/dev/null) || die "Cannot reach fleet serve"
+      fi
+      local synced
+      synced=$(echo "$resp" | jq -r 'if type == "object" and has("synced") then .synced else "batch" end')
+      if [[ "$synced" == "batch" ]]; then
+        echo "$resp" | jq -r 'to_entries[] | "  \(.key): \(if .value.synced then "synced -> \(.value.version)" else .value.reason end)"'
+      elif [[ "$synced" == "true" ]]; then
+        printf "\033[32m✓ Synced\033[0m -> %s\n" "$(echo "$resp" | jq -r '.version')"
+      else
+        printf "\033[2m%s\033[0m\n" "$(echo "$resp" | jq -r '.reason')"
+      fi
+      ;;
+    *)
+      die "Usage: fleet brain [edit|status|sync [--hive <name>]]"
+      ;;
+  esac
+}
 
 cmd_artifact() {
   local hive
@@ -1328,7 +1390,7 @@ show_help() {
     refresh                       Re-generate AI profile
     clean                         Remove stale registrations
     journal                       View work log
-    brain                         Edit CLAUDE.md
+    brain [edit|status|sync]      Edit, check, or sync CLAUDE.md
     event <type> <message>        Add to this bee's permanent timeline
     artifact [file ...] | ls      Share files to hive artifacts/
 
@@ -1660,14 +1722,15 @@ cmd_queen() {
   local alive
   alive=$(echo "$resp" | jq -r '.alive')
   if [[ "$alive" == "true" ]]; then
-    local uptime audits bees escs
+    local uptime audits bees escs leases
     uptime=$(echo "$resp" | jq -r '.uptime')
     audits=$(echo "$resp" | jq -r '.auditCount')
     bees=$(echo "$resp" | jq -r '.bees')
     escs=$(echo "$resp" | jq -r '.escalations')
-    printf "\033[33m♛ Queen active\033[0m — uptime %ss, %s audits, %s bees tracked, %s escalations\n" "$uptime" "$audits" "$bees" "$escs"
+    leases=$(echo "$resp" | jq -r '.leases // 0')
+    printf "\033[33m♛ Queen active\033[0m - uptime %ss, %s audits, %s bees, %s escalations, %s leases\n" "$uptime" "$audits" "$bees" "$escs" "$leases"
   else
-    printf "\033[31m♛ Queen inactive\033[0m — start with: fleet serve\n"
+    printf "\033[31m♛ Queen inactive\033[0m - start with: fleet serve\n"
   fi
 }
 
@@ -1717,7 +1780,7 @@ main() {
     refresh)    cmd_refresh ;;
     clean)      cmd_clean ;;
     journal)    cmd_journal ;;
-    brain)      cmd_brain ;;
+    brain)      shift; cmd_brain "$@" ;;
     event)      shift; cmd_event "$@" ;;
     artifact)   shift; cmd_artifact "$@" ;;
     serve)      shift; cmd_serve "$@" ;;

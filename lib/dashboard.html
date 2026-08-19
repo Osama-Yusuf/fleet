@@ -218,6 +218,9 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 .type-badge{font-size:.625rem;padding:3px 9px;border-radius:var(--r-sm);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
 .type-badge.brain{background:var(--amber-bg);color:var(--amber)}
 .type-badge.repo{background:var(--accent-bg);color:var(--accent)}
+.type-badge.brain-ok{background:color-mix(in srgb,var(--ok) 12%,transparent);color:var(--ok)}
+.type-badge.brain-outdated{background:color-mix(in srgb,var(--warn) 12%,transparent);color:var(--warn)}
+.type-badge.brain-missing{background:color-mix(in srgb,var(--err) 12%,transparent);color:var(--err)}
 .hive-path{display:inline-flex;align-items:center;gap:8px;max-width:100%;margin-top:9px;padding:4px 11px 4px 9px;border-radius:999px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--border);font-family:var(--mono);font-size:.6875rem;color:var(--text2);word-break:break-all;line-height:1.5}
 .hive-path::before{content:'path';flex:none;font-family:var(--sans);font-size:.5rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
 .hive-actions{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
@@ -472,6 +475,8 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 .ev-announce,.ev-review_request{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
 .ev-brain_audit{background:color-mix(in srgb,var(--text3) 10%,transparent);color:var(--text3)}
 .ev-lease_acquired,.ev-lease_released{background:color-mix(in srgb,var(--ok) 10%,transparent);color:var(--ok)}
+.ev-lease_expired{background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn)}
+.ev-brain_sync{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
 .ev-bee{font-family:var(--mono);color:var(--text2);font-weight:600}
 .ev-detail{color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 /* ── tabs + markdown ── */
@@ -952,7 +957,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 })();
 
 (function(){
-  let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={};
+  let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={}, _brainStatusCache=null;
   let openAcct=null, destroyBee=null, mdMode='rendered';
   let _notifs=[], _notifUnread=0, _notifOpen=false, _lastNotifCount=0;
   let _doctorOpen=false, _doctorIssueCount=0, _doctorResults=null;
@@ -1873,7 +1878,16 @@ input[type="text"]::placeholder{color:var(--text3)}
     const liveCost=bees.reduce((sum,x)=>sum+((x.current&&x.current.cost)||0),0);
 
     let o='<div class="page-head"><div class="page-head-main">';
-    o+=`<div class="hive-title-row"><span class="hive-title">${esc(h.name)}</span><span class="type-badge ${t}">${t}</span></div>`;
+    let brainBadge='';
+    if(_brainStatusCache){
+      const bh=_brainStatusCache.hives.find(x=>x.name===h.name);
+      if(bh){
+        if(bh.synced) brainBadge=`<span class="type-badge brain-ok" title="Coordination synced">brain ${bh.version}</span>`;
+        else if(bh.version) brainBadge=`<span class="type-badge brain-outdated" title="Coordination outdated - run fleet brain sync">brain ${bh.version} (outdated)</span>`;
+        else brainBadge=`<span class="type-badge brain-missing" title="Coordination missing - run fleet brain sync">brain missing</span>`;
+      }
+    }
+    o+=`<div class="hive-title-row"><span class="hive-title">${esc(h.name)}</span><span class="type-badge ${t}">${t}</span>${brainBadge}</div>`;
     o+=`<div class="hive-path">${esc(h.path||'')}</div>`;
     o+='</div>';
     o+=`<div class="hive-actions" style="margin-top:0">
@@ -2034,7 +2048,8 @@ input[type="text"]::placeholder{color:var(--text3)}
     try{
       const [qs,hs]=await Promise.all([
         api('/api/queen/status'),
-        api(`/api/queen/hive/${encodeURIComponent(hiveName)}`)
+        api(`/api/queen/hive/${encodeURIComponent(hiveName)}`),
+        refreshBrainStatus()
       ]);
       let o='<div class="queen-grid">';
 
@@ -2066,6 +2081,16 @@ input[type="text"]::placeholder{color:var(--text3)}
       }
       o+='</div>';
 
+      // Active leases
+      const leases=hs.leases||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Leases<span class="section-count">${leases.length}</span></div>`;
+      if(leases.length===0) o+='<div class="queen-empty">No active leases</div>';
+      else for(const l of leases){
+        const exp=l.expiresIn>0?`${l.expiresIn}s left`:'expired';
+        o+=`<div class="queen-brain-row"><span class="brain-section">${esc(l.resource)}</span><span style="font-family:var(--mono);font-size:.6875rem;color:var(--text3)">${esc(l.owner)} - ${exp}</span></div>`;
+      }
+      o+='</div>';
+
       // Brain audit
       const brain=hs.brain;
       if(brain){
@@ -2077,6 +2102,21 @@ input[type="text"]::placeholder{color:var(--text3)}
         } else o+='<div class="queen-empty">All sections within limits</div>';
         o+='</div>';
       }
+
+      // Brain versions
+      try{
+        const bs=await api('/api/queen/brain/status');
+        o+=`<div class="queen-section"><div class="queen-section-hdr">Brain Versions<span class="section-count">${bs.templateVersion}</span></div>`;
+        if(bs.hives&&bs.hives.length>0){
+          for(const h of bs.hives){
+            const cls=h.synced?'var(--ok)':h.version?'var(--warn)':'var(--err)';
+            const label=h.synced?h.version:h.version?h.version+' (outdated)':'missing';
+            o+=`<div class="queen-brain-row"><span class="brain-section">${esc(h.name)}</span><span style="font-family:var(--mono);font-size:.6875rem;color:${cls};font-weight:600">${label}</span></div>`;
+          }
+          o+=`<div style="padding:8px 14px"><button class="btn btn-sm" onclick="window._brainSync()">Sync All</button></div>`;
+        } else o+='<div class="queen-empty">No hives registered</div>';
+        o+='</div>';
+      }catch(e){}
 
       // Royal Decree
       o+=`<div class="queen-section"><div class="queen-section-hdr">Royal Decree</div>
@@ -2099,6 +2139,8 @@ input[type="text"]::placeholder{color:var(--text3)}
           else if(ev.message) o+=`<span class="ev-detail">${esc(ev.message).substring(0,80)}</span>`;
           else if(ev.summary) o+=`<span class="ev-detail">${esc(ev.summary).substring(0,80)}</span>`;
           else if(ev.result) o+=`<span class="ev-detail">${esc(ev.result).substring(0,80)}</span>`;
+          else if(ev.resource) o+=`<span class="ev-detail">${esc(ev.resource)}${ev.version?' v'+ev.version:''}</span>`;
+          else if(ev.version) o+=`<span class="ev-detail">v${ev.version}</span>`;
           o+='</div>';
         }
         o+='</div>';
@@ -2115,6 +2157,20 @@ input[type="text"]::placeholder{color:var(--text3)}
     if(s<3600)return Math.floor(s/60)+'m';
     return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
   }
+
+  window._brainSync=async function(){
+    try{
+      const r=await api('/api/queen/brain/sync',{method:'POST'});
+      const keys=Object.keys(r);
+      const synced=keys.filter(k=>r[k].synced);
+      if(synced.length>0) toast(`Brain synced: ${synced.join(', ')}`,'ok');
+      else toast('All brains already up to date','ok');
+      await refreshBrainStatus();
+      renderQueenPanel();
+      renderHiveView();
+      $('hiveView').scrollTo({top:0,behavior:'smooth'});
+    }catch(e){toast('Brain sync failed','err');}
+  };
 
   window._sendDecree=async function(){
     if(!sel)return;
@@ -2647,6 +2703,10 @@ input[type="text"]::placeholder{color:var(--text3)}
     }catch(e){}
   }
 
+  async function refreshBrainStatus(){
+    try{ _brainStatusCache=await api('/api/queen/brain/status'); }catch(e){ _brainStatusCache=null; }
+  }
+
   async function refreshAccounts(){
     try{
       accounts=await api('/api/accounts');
@@ -2676,7 +2736,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   async function init(){
     renderPills();
-    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts(),refreshNotifs()]);
+    await Promise.all([refreshHives(),refreshStrays(),refreshAccounts(),refreshNotifs(),refreshBrainStatus()]);
     $('searchInput').addEventListener('input',triggerSearch);
     const hashParts=location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
     if(hashParts.length){
