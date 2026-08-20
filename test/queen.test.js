@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 
-const { Queen, DEFAULT_CONFIG } = require('../lib/queen');
+const { Queen, DEFAULT_CONFIG, smartTruncate } = require('../lib/queen');
 
 function makeHive(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'queen-'));
@@ -679,4 +679,25 @@ test('auditHive escalates complete keyword in claim', t => {
   fs.writeFileSync(path.join(hive, '.fleet', 'active', 'bee1.md'), 'Task complete\n');
   q.auditHive(hive);
   assert.equal(q.getStatus().escalations, 1);
+});
+
+// ── smartTruncate ──
+
+test('smartTruncate returns short strings unchanged', t => {
+  assert.equal(smartTruncate('hello world', 100), 'hello world');
+});
+
+test('smartTruncate cuts at word boundary', t => {
+  const input = 'Working on implementing the new feature for the dashboard settings page and testing it thoroughly';
+  const result = smartTruncate(input, 60);
+  assert.ok(result.length <= 63);
+  assert.ok(result.endsWith('...'));
+  assert.ok(!result.includes('tho'));
+});
+
+test('smartTruncate falls back to hard cut when no good word boundary', t => {
+  const input = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bbb';
+  const result = smartTruncate(input, 30);
+  assert.ok(result.length <= 33);
+  assert.ok(result.endsWith('...'));
 });

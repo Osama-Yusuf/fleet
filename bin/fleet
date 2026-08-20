@@ -580,7 +580,9 @@ EOF
 
   # ── Inject coordination ──
   inject_protocol CLAUDE.md
-  inject_rules .fleet
+  if ! grep -q "fleet-brain build:" CLAUDE.md 2>/dev/null; then
+    inject_rules .fleet
+  fi
 
   # ── MCP config per bee ──
   for b in bee*; do
@@ -859,21 +861,29 @@ cmd_doctor() {
   jq . .fleet/fleet.json &>/dev/null || { err "  .fleet/fleet.json: invalid JSON"; { ((issues++)) || true; }; }
   [[ ! -f CLAUDE.md ]] && { err "  CLAUDE.md: missing"; { ((issues++)) || true; }; }
 
-  # Ensure rules file exists
-  if [[ ! -f .fleet/RULES.md ]]; then
-    inject_rules .fleet
-    ok "  Created .fleet/RULES.md"
-  else
-    local had_event_rules=false
-    grep -q "## Permanent bee history" .fleet/RULES.md && had_event_rules=true
-    inject_rules .fleet
-    if ! $had_event_rules; then
-      ok "  Updated .fleet/RULES.md with permanent bee history"
-    fi
-  fi
-
   # Ensure coordination protocol is in brain
   inject_protocol CLAUDE.md
+
+  # RULES.md is the pre-Queen coordination model (direct file writes).
+  # When the Queen-managed section is in CLAUDE.md, RULES.md contradicts it.
+  if grep -q "fleet-brain build:" CLAUDE.md 2>/dev/null; then
+    if [[ -f .fleet/RULES.md ]]; then
+      rm .fleet/RULES.md
+      ok "  Removed stale .fleet/RULES.md (superseded by Queen coordination in CLAUDE.md)"
+    fi
+  else
+    if [[ ! -f .fleet/RULES.md ]]; then
+      inject_rules .fleet
+      ok "  Created .fleet/RULES.md"
+    else
+      local had_event_rules=false
+      grep -q "## Permanent bee history" .fleet/RULES.md && had_event_rules=true
+      inject_rules .fleet
+      if ! $had_event_rules; then
+        ok "  Updated .fleet/RULES.md with permanent bee history"
+      fi
+    fi
+  fi
 
   # Ensure MCP config exists for each bee
   for b in bee*; do
@@ -1395,8 +1405,15 @@ show_help() {
     artifact [file ...] | ls      Share files to hive artifacts/
 
   Queen:
-    queen                         Show Queen supervisor status
+    queen [status]                Show Queen supervisor status
+    queen log [N] [--hive X]     Show recent Queen events (default 30)
+    queen config [--hive X]      Show Queen configuration (global or per-hive)
+    queen template               Show coordination template synced to hives
     announce "<msg>" [--hive X]   Broadcast a royal decree to all bees
+
+  Bee-to-bee:
+    Bees can communicate directly using Claude Code's built-in
+    ListAgents and SendMessage tools. See CLAUDE.md for guidelines.
 
   Global:
     serve [--port N]              Start web dashboard + Queen (default: 3847)
@@ -1713,39 +1730,207 @@ cmd_config() {
 # ════════════════════════════════════════════════════════
 #  QUEEN
 # ════════════════════════════════════════════════════════
-cmd_queen() {
+fmt_duration() {
+  local s=$1
+  if [[ $s -ge 86400 ]]; then
+    printf "%dd %dh" $((s/86400)) $(( (s%86400)/3600 ))
+  elif [[ $s -ge 3600 ]]; then
+    printf "%dh %dm" $((s/3600)) $(( (s%3600)/60 ))
+  elif [[ $s -ge 60 ]]; then
+    printf "%dm %ds" $((s/60)) $((s%60))
+  else
+    printf "%ds" "$s"
+  fi
+}
+
+queen_api() {
   local port
   port=$(jq -r '.port // 3847' "$GLOBAL_CONFIG" 2>/dev/null || echo 3847)
-  local url="http://127.0.0.1:${port}/api/queen/status"
+  local endpoint="$1"
+  curl -s "http://127.0.0.1:${port}${endpoint}" 2>/dev/null || die "Cannot reach fleet serve at port $port"
+}
+
+cmd_queen_status() {
   local resp
-  resp=$(curl -s "$url" 2>/dev/null) || die "Cannot reach fleet serve at port $port"
+  resp=$(queen_api "/api/queen/status")
   local alive
   alive=$(echo "$resp" | jq -r '.alive')
-  if [[ "$alive" == "true" ]]; then
-    local uptime audits bees escs leases
-    uptime=$(echo "$resp" | jq -r '.uptime')
-    audits=$(echo "$resp" | jq -r '.auditCount')
-    bees=$(echo "$resp" | jq -r '.bees')
-    escs=$(echo "$resp" | jq -r '.escalations')
-    leases=$(echo "$resp" | jq -r '.leases // 0')
-    printf "\033[33m♛ Queen active\033[0m - uptime %ss, %s audits, %s bees, %s escalations, %s leases\n" "$uptime" "$audits" "$bees" "$escs" "$leases"
-
-    local bee_count
-    bee_count=$(echo "$resp" | jq -r '.beeDetails | length')
-    if [[ "$bee_count" -gt 0 ]]; then
-      printf "\n  \033[32mConnected bees:\033[0m\n"
-      echo "$resp" | jq -r '.beeDetails[] | "  \(.bee)\t\(.hive)\t\(if .disconnected then "dead" elif .lastSeen < 60 then "alive" else "stale \(.lastSeen)s" end)\t\(.task // "-")"' | column -t -s $'\t'
-    fi
-
-    local esc_count
-    esc_count=$(echo "$resp" | jq -r '.escalationDetails | length')
-    if [[ "$esc_count" -gt 0 ]]; then
-      printf "\n  \033[31mActive escalations:\033[0m\n"
-      echo "$resp" | jq -r '.escalationDetails[] | "  \(.bee)\t\(.level)\t\(.elapsed)s\t\(.reason)"' | column -t -s $'\t'
-    fi
-  else
+  if [[ "$alive" != "true" ]]; then
     printf "\033[31m♛ Queen inactive\033[0m - start with: fleet serve\n"
+    return
   fi
+
+  local uptime_s audits bees escs leases
+  uptime_s=$(echo "$resp" | jq -r '.uptime')
+  audits=$(echo "$resp" | jq -r '.auditCount')
+  bees=$(echo "$resp" | jq -r '.bees')
+  escs=$(echo "$resp" | jq -r '.escalations')
+  leases=$(echo "$resp" | jq -r '.leases // 0')
+  local uptime_h
+  uptime_h=$(fmt_duration "$uptime_s")
+  printf "\033[33m♛ Queen active\033[0m - uptime \033[1m%s\033[0m, %s audits, %s bees, %s escalations, %s leases\n" "$uptime_h" "$audits" "$bees" "$escs" "$leases"
+
+  local bee_count
+  bee_count=$(echo "$resp" | jq -r '.beeDetails | length')
+  if [[ "$bee_count" -gt 0 ]]; then
+    printf "\n  \033[32mConnected bees:\033[0m\n"
+    echo "$resp" | jq -r '.beeDetails[] | "\(.bee)\t\(.hive)\t\(.lastSeen)\t\(.disconnected)\t\(.task // "-")"' | while IFS=$'\t' read -r bee hive seen disc task; do
+      local status_color status_text seen_h
+      seen_h=$(fmt_duration "$seen")
+      if [[ "$disc" == "true" ]]; then
+        status_color="\033[31m"; status_text="dead"
+      elif [[ "$seen" -lt 60 ]]; then
+        status_color="\033[32m"; status_text="alive ($seen_h)"
+      elif [[ "$seen" -lt 300 ]]; then
+        status_color="\033[33m"; status_text="idle ($seen_h)"
+      else
+        status_color="\033[31m"; status_text="stale ($seen_h)"
+      fi
+      printf "  %-12s %-14s ${status_color}%-18s\033[0m %s\n" "$bee" "$hive" "$status_text" "$task"
+    done
+  fi
+
+  local esc_count
+  esc_count=$(echo "$resp" | jq -r '.escalationDetails | length')
+  if [[ "$esc_count" -gt 0 ]]; then
+    printf "\n  \033[31mActive escalations:\033[0m\n"
+    echo "$resp" | jq -r '.escalationDetails[] | "\(.bee)\t\(.level)\t\(.elapsed)\t\(.reason)"' | while IFS=$'\t' read -r bee level elapsed reason; do
+      local lvl_color elapsed_h
+      elapsed_h=$(fmt_duration "$elapsed")
+      case "$level" in
+        notice)    lvl_color="\033[36m" ;;
+        warning)   lvl_color="\033[33m" ;;
+        directive) lvl_color="\033[31m" ;;
+        override)  lvl_color="\033[35m" ;;
+        *)         lvl_color="\033[0m" ;;
+      esac
+      printf "  %-12s ${lvl_color}%-12s\033[0m %-10s %s\n" "$bee" "$level" "$elapsed_h" "$reason"
+    done
+  fi
+}
+
+cmd_queen_log() {
+  local limit=30 hive_filter=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --hive) hive_filter="$2"; shift 2 ;;
+      *)      limit="$1"; shift ;;
+    esac
+  done
+  local query="/api/queen/events?limit=$limit"
+  [[ -n "$hive_filter" ]] && query="${query}&hive=$(printf '%s' "$hive_filter" | jq -sRr @uri)"
+  local resp
+  resp=$(queen_api "$query")
+  local count
+  count=$(echo "$resp" | jq 'length')
+  if [[ "$count" == "0" ]]; then
+    echo "No queen events found."
+    return
+  fi
+  printf "\033[33m♛ Recent queen events\033[0m (%s)\n\n" "$count"
+  echo "$resp" | jq -r '.[] | "\(.at)\t\(.type)\t\(.hive // "-")\t\(.bee // "-")\t\(.reason // .message // .summary // .resource // "-")"' | while IFS=$'\t' read -r at type hive bee detail; do
+    local ts type_color
+    ts="${at:0:19}"
+    case "$type" in
+      escalation)        type_color="\033[31m" ;;
+      deescalation)      type_color="\033[32m" ;;
+      bee_connect)       type_color="\033[32m" ;;
+      bee_disconnect)    type_color="\033[31m" ;;
+      bee_reconnect)     type_color="\033[33m" ;;
+      override*)         type_color="\033[35m" ;;
+      lease*)            type_color="\033[36m" ;;
+      brain*)            type_color="\033[34m" ;;
+      *)                 type_color="\033[0m" ;;
+    esac
+    printf "  \033[2m%s\033[0m  ${type_color}%-22s\033[0m  %-8s %-8s  %s\n" "$ts" "$type" "$hive" "$bee" "$detail"
+  done
+}
+
+cmd_queen_config() {
+  local hive_filter="" scope="global"
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --global) scope="global"; shift ;;
+      --hive)   scope="hive"; hive_filter="$2"; shift 2 ;;
+      *)        shift ;;
+    esac
+  done
+
+  local resp
+  if [[ "$scope" == "hive" && -n "$hive_filter" ]]; then
+    resp=$(queen_api "/api/queen/config?hive=$(printf '%s' "$hive_filter" | jq -sRr @uri)")
+    printf "\033[33m♛ Queen config\033[0m - hive: \033[1m%s\033[0m (merged)\n\n" "$hive_filter"
+    local cfg
+    cfg=$(echo "$resp" | jq '.merged // {}')
+  else
+    resp=$(queen_api "/api/queen/config")
+    printf "\033[33m♛ Queen config\033[0m - global\n\n"
+    local cfg
+    cfg=$(echo "$resp" | jq '.global // {}')
+    local has_global
+    has_global=$(echo "$cfg" | jq 'length')
+    if [[ "$has_global" == "0" ]]; then
+      printf "  \033[2m(no global overrides - using defaults)\033[0m\n\n"
+      cfg=$(echo "$resp" | jq '.defaults // {}')
+    fi
+  fi
+
+  printf "  \033[1mGeneral\033[0m\n"
+  local enabled audit_s heartbeat_s
+  enabled=$(echo "$cfg" | jq -r '.enabled // true')
+  audit_s=$(echo "$cfg" | jq -r '.audit_interval_s // 15')
+  heartbeat_s=$(echo "$cfg" | jq -r '.heartbeat_stale_s // 300')
+  printf "    Enabled            %s\n" "$enabled"
+  printf "    Audit interval     %ss\n" "$audit_s"
+  printf "    Stale threshold    %ss\n" "$heartbeat_s"
+
+  printf "\n  \033[1mEscalation chain\033[0m\n"
+  local notice_s warning_s directive_s override_s
+  notice_s=$(echo "$cfg" | jq -r '.escalation.notice_s // 0')
+  warning_s=$(echo "$cfg" | jq -r '.escalation.warning_s // 300')
+  directive_s=$(echo "$cfg" | jq -r '.escalation.directive_s // 600')
+  override_s=$(echo "$cfg" | jq -r '.escalation.override_s // 1200')
+  printf "    Notice             %ss\n" "$notice_s"
+  printf "    Warning            +%ss\n" "$warning_s"
+  printf "    Directive          +%ss\n" "$directive_s"
+  printf "    Override           +%ss\n" "$override_s"
+
+  printf "\n  \033[1mBrain audit\033[0m\n"
+  local section_max total_max brain_audit_s
+  section_max=$(echo "$cfg" | jq -r '.brain.section_max_lines // 50')
+  total_max=$(echo "$cfg" | jq -r '.brain.total_max_lines // 300')
+  brain_audit_s=$(echo "$cfg" | jq -r '.brain.audit_interval_s // 3600')
+  printf "    Section limit      %s lines\n" "$section_max"
+  printf "    Total limit        %s lines\n" "$total_max"
+  printf "    Audit interval     %ss\n" "$brain_audit_s"
+}
+
+cmd_queen_template() {
+  local resp
+  resp=$(queen_api "/api/queen/template")
+  local version custom
+  version=$(echo "$resp" | jq -r '.version // "unknown"')
+  custom=$(echo "$resp" | jq -r '.custom // empty')
+
+  if [[ -n "$custom" ]]; then
+    printf "\033[33m♛ Coordination template\033[0m - version \033[1m%s\033[0m (customized)\n\n" "$version"
+    echo "$custom"
+  else
+    local template
+    template=$(echo "$resp" | jq -r '.template // ""')
+    printf "\033[33m♛ Coordination template\033[0m - version \033[1m%s\033[0m (built-in)\n\n" "$version"
+    echo "$template"
+  fi
+}
+
+cmd_queen() {
+  case "${1:-status}" in
+    status)   shift 2>/dev/null; cmd_queen_status "$@" ;;
+    log)      shift; cmd_queen_log "$@" ;;
+    config)   shift; cmd_queen_config "$@" ;;
+    template) shift; cmd_queen_template "$@" ;;
+    *)        die "Unknown queen subcommand: $1. Use: status, log, config, template" ;;
+  esac
 }
 
 cmd_announce() {

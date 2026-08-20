@@ -465,6 +465,36 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 .brain-lines{font-family:var(--mono);font-size:.6875rem;color:var(--warn);font-weight:600}
 .decree-box{padding:10px 14px;display:flex;gap:8px;align-items:flex-end}
 .decree-area{flex:1;resize:vertical;min-height:48px;max-height:120px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font:inherit;font-size:.8125rem}
+.queen-settings{padding:16px}
+.queen-settings-cards{display:flex;flex-direction:column;gap:14px}
+.queen-settings-card{border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.queen-card-title{padding:8px 14px;font-size:.6875rem;text-transform:uppercase;letter-spacing:.08em;font-weight:600;color:var(--text3);background:var(--bg);border-bottom:1px solid var(--border)}
+.queen-card-body{padding:10px 14px;display:flex;flex-direction:column;gap:10px}
+.queen-field{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.queen-field-info{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.queen-field-label{font-size:.8125rem;font-weight:500;color:var(--text)}
+.queen-field-hint{font-size:.6875rem;color:var(--text3)}
+.queen-field input[type="number"]{width:80px;min-height:30px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:.8125rem;outline:none;text-align:right}
+.queen-field input[type="number"]:focus{border-color:var(--accent)}
+.queen-field select{padding:5px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg);color:var(--text);font-family:var(--mono);font-size:.8125rem;outline:none}
+.queen-field select:focus{border-color:var(--accent)}
+.queen-settings-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.queen-settings-scope-hint{font-size:.6875rem;color:var(--text3);margin-top:-8px;margin-bottom:4px}
+.queen-custom-toggle{display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:.8125rem;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border)}
+.queen-custom-toggle input{accent-color:var(--accent)}
+.queen-custom-toggle-hint{font-size:.6875rem;color:var(--text3);margin-left:auto}
+/* template modal */
+.template-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:center;justify-content:center}
+.template-modal-bg.open{display:flex}
+.template-modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);width:min(700px,90vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.template-modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.template-modal-header h3{font-size:.9375rem;font-weight:700;margin:0;display:flex;align-items:center;gap:8px}
+.template-modal-header .close-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:1.2rem;padding:2px 6px;border-radius:var(--r-sm)}
+.template-modal-header .close-btn:hover{color:var(--text);background:var(--bg)}
+.template-modal-body{flex:1;overflow-y:auto;padding:0}
+.template-editor{width:100%;min-height:400px;padding:16px 18px;border:none;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:.8125rem;line-height:1.7;resize:vertical;outline:none}
+.template-modal-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)}
+.template-version{font-size:.6875rem;color:var(--text3);font-family:var(--mono)}
 .queen-events{max-height:300px;overflow-y:auto}
 .queen-event{display:flex;align-items:center;gap:8px;padding:4px 14px;font-size:.75rem;border-bottom:1px solid var(--border)}
 .queen-event:last-child{border-bottom:0}
@@ -479,8 +509,24 @@ a:hover{color:var(--accent-h);text-decoration:underline}
 .ev-lease_acquired,.ev-lease_released{background:color-mix(in srgb,var(--ok) 10%,transparent);color:var(--ok)}
 .ev-lease_expired{background:color-mix(in srgb,var(--warn) 10%,transparent);color:var(--warn)}
 .ev-brain_sync{background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent)}
+.ev-bee_message{background:color-mix(in srgb,var(--info,#5b9bd5) 15%,transparent);color:var(--info,#5b9bd5)}
 .ev-bee{font-family:var(--mono);color:var(--text2);font-weight:600}
+.ev-filter-bar{display:flex;gap:4px;padding:6px 14px;flex-wrap:wrap;border-bottom:1px solid var(--border)}
+.ev-filter-pill{padding:2px 8px;font-size:.625rem;font-weight:600;font-family:var(--mono);border-radius:var(--r-sm);border:1px solid var(--border);background:none;color:var(--text3);cursor:pointer;transition:all 120ms}
+.ev-filter-pill:hover{color:var(--text);border-color:var(--text3)}
+.ev-filter-pill.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
 .ev-detail{color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.queen-topbar-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--border);border-radius:999px;background:none;color:var(--text2);cursor:pointer;transition:color 140ms,border-color 140ms,background 140ms;flex:none}
+.queen-topbar-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-bg)}
+.queen-topbar-btn.active{color:var(--accent);border-color:var(--accent)}
+.queen-bee-badge{position:absolute;top:-4px;right:-4px;min-width:14px;height:14px;padding:0 3px;border-radius:999px;background:var(--accent);color:var(--surface);font-size:.5625rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+.queen-sub-tabs{display:flex;gap:2px;padding:6px 8px;margin-bottom:8px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)}
+.queen-sub-tab{padding:5px 14px;border-radius:var(--r-sm);font-size:.75rem;font-weight:600;color:var(--text3);background:none;border:none;cursor:pointer;transition:color 120ms,background 120ms;font-family:inherit}
+.queen-sub-tab:hover{color:var(--text);background:color-mix(in srgb,var(--text) 5%,transparent)}
+.queen-sub-tab.active{background:var(--accent-bg);color:var(--accent)}
+.queen-sub-content{display:none}
+.queen-sub-content.active{display:block}
+.queen-global-title{font-size:1.125rem;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:16px}
 /* ── tabs + markdown ── */
 .tab-group{display:flex;align-items:center;gap:2px;padding:7px 10px;box-shadow:inset 0 -1px 0 var(--border);flex-wrap:wrap}
 .tab-btn{padding:6px 16px;border-radius:var(--r-sm);font-size:.8125rem;font-weight:600;color:var(--text3);background:none;border:none;cursor:pointer;transition:color 120ms,background 120ms;font-family:inherit}
@@ -891,6 +937,25 @@ input[type="text"]::placeholder{color:var(--text3)}
   </div>
 </div>
 
+<div class="template-modal-bg" id="templateModal">
+  <div class="template-modal">
+    <div class="template-modal-header">
+      <h3><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12h12L13 5l-3 3-2-4-2 4-3-3z" stroke-linejoin="round"/><path d="M2 12v1.5h12V12"/></svg>Coordination Template</h3>
+      <button class="close-btn" onclick="window._closeTemplate()">&times;</button>
+    </div>
+    <div class="template-modal-body">
+      <textarea class="template-editor" id="templateEditor"></textarea>
+    </div>
+    <div class="template-modal-footer">
+      <span class="template-version" id="templateVersion"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="window._resetTemplate()">Reset to built-in</button>
+        <button class="btn btn-accent btn-sm" onclick="window._saveTemplate()">Save &amp; sync</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="notif-panel" id="notifPanel">
   <div class="notif-panel-header"><span>Notifications</span><button onclick="window._markAllRead()">Mark all read</button></div>
   <div class="notif-list" id="notifList"></div>
@@ -959,7 +1024,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 })();
 
 (function(){
-  let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={}, _brainStatusCache=null;
+  let hives=[], strays=[], accounts=[], sel=null, selectedStray=null, selectedBee=null, beeLifeData=null, beeTab='timeline', strayLifeData=null, strayTab='git', activeTab='brain', tabCache={}, _brainStatusCache=null, queenPageOpen=false, queenSubTab='overview', hiveQueenSubTab='activity', hiveCustomSettings=false, _queenBeeCount=0, _queenEventFilter=null;
   let openAcct=null, destroyBee=null, mdMode='rendered';
   let _notifs=[], _notifUnread=0, _notifOpen=false, _lastNotifCount=0;
   let _doctorOpen=false, _doctorIssueCount=0, _doctorResults=null;
@@ -1086,7 +1151,7 @@ input[type="text"]::placeholder{color:var(--text3)}
       const cnt=a.stats?(a.stats.totalMessages||a.stats.totalSessions||0):0;
       const cls=openAcct===i?' open':'';
       return `<button class="pill${cls}" onclick="window._toggleAcct(${i})"><span class="pill-dot" style="background:${ACCT_C[i%ACCT_C.length]}"></span>${esc(a.name)}<span class="pill-count tabnum">${fmtNum(cnt)}</span></button>`;
-    }).join('')+`<button class="doctor-btn${_doctorIssueCount>0?' has-issues':''}" onclick="window._toggleDoctor()" title="Hive Health (${_doctorIssueCount?_doctorIssueCount+' issues':'all healthy'})" aria-label="Hive Health"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.5v5M5.5 4h5" stroke-linecap="round" stroke-width="1.8"/><path d="M4 8.5h8v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4Z" stroke-linejoin="round"/><path d="M6 8.5V7a2 2 0 0 1 4 0v1.5" stroke-linecap="round"/></svg>${_doctorIssueCount>0?`<span class="doctor-badge">${_doctorIssueCount}</span>`:''}</button>`+`<button class="notif-btn${_notifUnread>0?' has-unread':''}" onclick="window._toggleNotifs()" title="Notifications" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6a4 4 0 0 1 8 0c0 3 1.5 4.5 2 5H2c.5-.5 2-2 2-5Z" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>${_notifUnread>0?`<span class="notif-badge">${_notifUnread>9?'9+':_notifUnread}</span>`:''}</button>`+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
+    }).join('')+`<button class="doctor-btn${_doctorIssueCount>0?' has-issues':''}" onclick="window._toggleDoctor()" title="Hive Health (${_doctorIssueCount?_doctorIssueCount+' issues':'all healthy'})" aria-label="Hive Health"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.5v5M5.5 4h5" stroke-linecap="round" stroke-width="1.8"/><path d="M4 8.5h8v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4Z" stroke-linejoin="round"/><path d="M6 8.5V7a2 2 0 0 1 4 0v1.5" stroke-linecap="round"/></svg>${_doctorIssueCount>0?`<span class="doctor-badge">${_doctorIssueCount}</span>`:''}</button>`+`<button class="queen-topbar-btn${queenPageOpen?' active':''}" onclick="window._openQueenPage()" title="Queen Supervisor" aria-label="Queen"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12h12L13 5l-3 3-2-4-2 4-3-3z" stroke-linejoin="round"/><path d="M2 12v1.5h12V12"/></svg>${_queenBeeCount>0?`<span class="queen-bee-badge">${_queenBeeCount}</span>`:''}</button>`+`<button class="notif-btn${_notifUnread>0?' has-unread':''}" onclick="window._toggleNotifs()" title="Notifications" aria-label="Notifications"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6a4 4 0 0 1 8 0c0 3 1.5 4.5 2 5H2c.5-.5 2-2 2-5Z" stroke-linejoin="round"/><path d="M6.5 13a1.5 1.5 0 0 0 3 0"/></svg>${_notifUnread>0?`<span class="notif-badge">${_notifUnread>9?'9+':_notifUnread}</span>`:''}</button>`+'<button class="theme-btn" id="themeBtn" onclick="window._cycleTheme()" aria-label="Theme"></button>';
     if(window._applyTheme)window._applyTheme();
   }
 
@@ -1423,9 +1488,9 @@ input[type="text"]::placeholder{color:var(--text3)}
     if(sel&&sel.name===name){window._unselectHive();return;}
     const h=hives.find(x=>x.name===name);
     if(!h)return;
-    selectedStray=null;selectedBee=null;beeLifeData=null;
+    selectedStray=null;selectedBee=null;beeLifeData=null;queenPageOpen=false;stopQueenAutoRefresh();
     sel=h;
-    tabCache={};activeTab='brain';
+    tabCache={};activeTab='brain';hiveQueenSubTab='activity';
     document.title='fleet · '+h.name;
     location.hash=encodeURIComponent(h.name);
     renderSidebar();renderHiveView();loadTab('brain');
@@ -1433,10 +1498,20 @@ input[type="text"]::placeholder{color:var(--text3)}
   };
 
   window._unselectHive=function(){
-    sel=null;selectedStray=null;selectedBee=null;beeLifeData=null;strayLifeData=null;tabCache={};
+    sel=null;selectedStray=null;selectedBee=null;beeLifeData=null;strayLifeData=null;tabCache={};queenPageOpen=false;stopQueenAutoRefresh();
     document.title='fleet';
     history.replaceState(null,'',location.pathname);
     renderSidebar();renderHiveView();
+  };
+
+  window._openQueenPage=function(){
+    sel=null;selectedStray=null;selectedBee=null;beeLifeData=null;strayLifeData=null;tabCache={};
+    queenPageOpen=true;queenSubTab='overview';
+    document.title='fleet - Queen';
+    location.hash='queen';
+    renderSidebar();renderHiveView();
+    renderPills();
+    startQueenAutoRefresh();
   };
 
   window._selStray=async function(strayPath){
@@ -1851,7 +1926,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   // ── Hive View ──
   function renderHiveView(){
-    if(!sel&&!selectedStray){
+    if(!sel&&!selectedStray&&!queenPageOpen){
       $('hiveView').style.display='none';
       $('emptyState').style.display='flex';
       document.title='fleet';
@@ -1859,6 +1934,11 @@ input[type="text"]::placeholder{color:var(--text3)}
     }
     $('emptyState').style.display='none';
     $('hiveView').style.display='block';
+
+    if(queenPageOpen){
+      renderGlobalQueenPage();
+      return;
+    }
 
     if(selectedBee){
       $('hiveView').innerHTML=renderBeeLife();
@@ -1884,9 +1964,9 @@ input[type="text"]::placeholder{color:var(--text3)}
     if(_brainStatusCache){
       const bh=_brainStatusCache.hives.find(x=>x.name===h.name);
       if(bh){
-        if(bh.synced) brainBadge=`<span class="type-badge brain-ok" title="Coordination synced">brain ${bh.version}</span>`;
-        else if(bh.version) brainBadge=`<span class="type-badge brain-outdated" title="Coordination outdated - run fleet brain sync">brain ${bh.version} (outdated)</span>`;
-        else brainBadge=`<span class="type-badge brain-missing" title="Coordination missing - run fleet brain sync">brain missing</span>`;
+        if(bh.synced) brainBadge=`<span class="type-badge brain-ok" style="cursor:pointer" onclick="window._openTemplate()" title="Click to view/edit coordination template">brain ${bh.version}</span>`;
+        else if(bh.version) brainBadge=`<span class="type-badge brain-outdated" style="cursor:pointer" onclick="window._openTemplate()" title="Click to view/edit coordination template">brain ${bh.version} (outdated)</span>`;
+        else brainBadge=`<span class="type-badge brain-missing" style="cursor:pointer" onclick="window._openTemplate()" title="Click to view/edit coordination template">brain missing</span>`;
       }
     }
     o+=`<div class="hive-title-row"><span class="hive-title">${esc(h.name)}</span><span class="type-badge ${t}">${t}</span>${brainBadge}</div>`;
@@ -2048,32 +2128,41 @@ input[type="text"]::placeholder{color:var(--text3)}
     const hiveName=sel.name;
     if(!el.children.length) el.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner"></span></div>';
     try{
-      const [qs,hs]=await Promise.all([
+      const [qs,hs,cfgData]=await Promise.all([
         api('/api/queen/status'),
         api(`/api/queen/hive/${encodeURIComponent(hiveName)}`),
-        refreshBrainStatus()
+        refreshBrainStatus(),
+        api(`/api/queen/config?hive=${encodeURIComponent(hiveName)}`).catch(()=>null)
       ]);
+      if(cfgData&&cfgData.hiveOverrides&&Object.keys(cfgData.hiveOverrides).length>0) hiveCustomSettings=true;
+      _queenBeeCount=qs.bees||0;
       let o='<div class="queen-grid">';
 
-      // Status bar
       const statusColor=qs.alive?'var(--ok)':'var(--err)';
       o+=`<div class="queen-status-bar">
         <span class="queen-dot" style="background:${statusColor}"></span>
         <strong>${qs.alive?'Queen Active':'Queen Inactive'}</strong>
-        <span class="queen-meta">Uptime ${fmtDur(qs.uptime)} · ${qs.auditCount} audits · ${qs.bees} bees tracked</span>
+        <span class="queen-meta">Uptime ${fmtDur(qs.uptime)} - ${qs.auditCount} audits - ${qs.bees} bees tracked</span>
       </div>`;
 
-      // Escalations
+      o+=`<div class="queen-sub-tabs">
+        <button class="queen-sub-tab${hiveQueenSubTab==='activity'?' active':''}" onclick="window._hiveQueenSubTab('activity')">Activity</button>
+        <button class="queen-sub-tab${hiveQueenSubTab==='events'?' active':''}" onclick="window._hiveQueenSubTab('events')">Events</button>
+        <button class="queen-sub-tab${hiveQueenSubTab==='brain'?' active':''}" onclick="window._hiveQueenSubTab('brain')">Brain</button>
+        ${hiveCustomSettings?`<button class="queen-sub-tab${hiveQueenSubTab==='settings'?' active':''}" onclick="window._hiveQueenSubTab('settings')">Settings</button>`:''}
+      </div>`;
+
+      // ── Activity sub-tab ──
+      o+=`<div class="queen-sub-content${hiveQueenSubTab==='activity'?' active':''}">`;
       const escEntries=Object.entries(hs.escalations||{});
       o+=`<div class="queen-section"><div class="queen-section-hdr">Escalations<span class="section-count">${escEntries.length}</span></div>`;
       if(escEntries.length===0) o+='<div class="queen-empty">No active escalations</div>';
-      else for(const [bee,esc] of escEntries){
-        const lvlClass='esc-'+esc.level;
-        o+=`<div class="queen-esc-row ${lvlClass}"><span class="esc-level">${esc.level}</span><span class="esc-bee">${esc.bee}</span><span class="esc-reason">${esc.reason}</span></div>`;
+      else for(const [bee,e] of escEntries){
+        const lvlClass='esc-'+e.level;
+        o+=`<div class="queen-esc-row ${lvlClass}"><span class="esc-level">${e.level}</span><span class="esc-bee">${e.bee}</span><span class="esc-reason">${e.reason}</span></div>`;
       }
       o+='</div>';
 
-      // Drones
       const drones=hs.drones||[];
       o+=`<div class="queen-section"><div class="queen-section-hdr">Drones<span class="section-count">${drones.length}</span></div>`;
       if(drones.length===0) o+='<div class="queen-empty">No drone activity</div>';
@@ -2083,7 +2172,6 @@ input[type="text"]::placeholder{color:var(--text3)}
       }
       o+='</div>';
 
-      // Active leases
       const leases=hs.leases||[];
       o+=`<div class="queen-section"><div class="queen-section-hdr">Leases<span class="section-count">${leases.length}</span></div>`;
       if(leases.length===0) o+='<div class="queen-empty">No active leases</div>';
@@ -2093,7 +2181,53 @@ input[type="text"]::placeholder{color:var(--text3)}
       }
       o+='</div>';
 
-      // Brain audit
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Royal Decree</div>
+        <div class="decree-box">
+          <textarea id="decreeInput" class="decree-area" placeholder="Broadcast a message to all bees..."></textarea>
+          <button class="btn btn-accent btn-sm" onclick="window._sendDecree()">Broadcast</button>
+        </div></div>`;
+
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Custom Settings</div>
+        <label class="queen-custom-toggle"><input type="checkbox" id="hiveCustomToggle" onchange="window._toggleHiveCustom('${esc(hiveName)}')"${hiveCustomSettings?' checked':''}/> Use custom settings for this hive<span class="queen-custom-toggle-hint">Overrides global Queen config</span></label></div>`;
+      o+='</div>';
+
+      // ── Events sub-tab ──
+      o+=`<div class="queen-sub-content${hiveQueenSubTab==='events'?' active':''}">`;
+      const events=hs.events||[];
+      const hiveEvTypes=[...new Set(events.map(e=>e.type))].sort();
+      const hiveFiltered=_queenEventFilter?events.filter(e=>e.type===_queenEventFilter):events;
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Event Log<span class="section-count">${hiveFiltered.length}${_queenEventFilter?' / '+events.length:''}</span></div>`;
+      if(hiveEvTypes.length>1){
+        o+='<div class="ev-filter-bar">';
+        for(const t of hiveEvTypes){
+          const count=events.filter(e=>e.type===t).length;
+          o+=`<button class="ev-filter-pill${_queenEventFilter===t?' active':''}" onclick="window._setEventFilter('${t}')">${t} (${count})</button>`;
+        }
+        o+='</div>';
+      }
+      if(hiveFiltered.length===0) o+='<div class="queen-empty">No events recorded</div>';
+      else{
+        o+='<div class="queen-events" style="max-height:500px">';
+        for(const ev of hiveFiltered.slice(0,50)){
+          const time=ev.at?new Date(ev.at).toLocaleTimeString():'';
+          o+=`<div class="queen-event"><span class="ev-time">${time}</span><span class="ev-type ev-${ev.type}">${ev.type}</span>`;
+          if(ev.bee) o+=`<span class="ev-bee">${ev.bee}</span>`;
+          if(ev.target) o+=`<span class="ev-bee" style="color:var(--text3)">&rarr; ${ev.target}</span>`;
+          if(ev.reason) o+=`<span class="ev-detail">${smartTrunc(esc(ev.reason))}</span>`;
+          else if(ev.message) o+=`<span class="ev-detail">${smartTrunc(esc(ev.message))}</span>`;
+          else if(ev.summary) o+=`<span class="ev-detail">${smartTrunc(esc(ev.summary))}</span>`;
+          else if(ev.result) o+=`<span class="ev-detail">${smartTrunc(esc(ev.result))}</span>`;
+          else if(ev.resource) o+=`<span class="ev-detail">${esc(ev.resource)}${ev.version?' v'+ev.version:''}</span>`;
+          else if(ev.version) o+=`<span class="ev-detail">v${ev.version}</span>`;
+          o+='</div>';
+        }
+        o+='</div>';
+      }
+      o+='</div></div>';
+
+
+      // ── Brain sub-tab ──
+      o+=`<div class="queen-sub-content${hiveQueenSubTab==='brain'?' active':''}">`;
       const brain=hs.brain;
       if(brain){
         const cands=brain.extractCandidates||[];
@@ -2104,54 +2238,40 @@ input[type="text"]::placeholder{color:var(--text3)}
         } else o+='<div class="queen-empty">All sections within limits</div>';
         o+='</div>';
       }
-
-      // Brain versions
       try{
         const bs=await api('/api/queen/brain/status');
-        o+=`<div class="queen-section"><div class="queen-section-hdr">Brain Versions<span class="section-count">${bs.templateVersion}</span></div>`;
-        if(bs.hives&&bs.hives.length>0){
-          for(const h of bs.hives){
-            const cls=h.synced?'var(--ok)':h.version?'var(--warn)':'var(--err)';
-            const label=h.synced?h.version:h.version?h.version+' (outdated)':'missing';
-            o+=`<div class="queen-brain-row"><span class="brain-section">${esc(h.name)}</span><span style="font-family:var(--mono);font-size:.6875rem;color:${cls};font-weight:600">${label}</span></div>`;
-          }
-          o+=`<div style="padding:8px 14px"><button class="btn btn-sm" onclick="window._brainSync()">Sync All</button></div>`;
-        } else o+='<div class="queen-empty">No hives registered</div>';
-        o+='</div>';
-      }catch(e){}
-
-      // Royal Decree
-      o+=`<div class="queen-section"><div class="queen-section-hdr">Royal Decree</div>
-        <div class="decree-box">
-          <textarea id="decreeInput" class="decree-area" placeholder="Broadcast a message to all bees..."></textarea>
-          <button class="btn btn-accent btn-sm" onclick="window._sendDecree()">Broadcast</button>
-        </div></div>`;
-
-      // Recent events
-      const events=hs.events||[];
-      o+=`<div class="queen-section"><div class="queen-section-hdr">Event Log<span class="section-count">${events.length}</span></div>`;
-      if(events.length===0) o+='<div class="queen-empty">No events recorded</div>';
-      else{
-        o+='<div class="queen-events">';
-        for(const ev of events.slice(0,30)){
-          const time=ev.at?new Date(ev.at).toLocaleTimeString():'';
-          o+=`<div class="queen-event"><span class="ev-time">${time}</span><span class="ev-type ev-${ev.type}">${ev.type}</span>`;
-          if(ev.bee) o+=`<span class="ev-bee">${ev.bee}</span>`;
-          if(ev.reason) o+=`<span class="ev-detail">${esc(ev.reason).substring(0,80)}</span>`;
-          else if(ev.message) o+=`<span class="ev-detail">${esc(ev.message).substring(0,80)}</span>`;
-          else if(ev.summary) o+=`<span class="ev-detail">${esc(ev.summary).substring(0,80)}</span>`;
-          else if(ev.result) o+=`<span class="ev-detail">${esc(ev.result).substring(0,80)}</span>`;
-          else if(ev.resource) o+=`<span class="ev-detail">${esc(ev.resource)}${ev.version?' v'+ev.version:''}</span>`;
-          else if(ev.version) o+=`<span class="ev-detail">v${ev.version}</span>`;
+        const thisHive=(bs.hives||[]).find(h=>h.name===hiveName);
+        if(thisHive){
+          const cls=thisHive.synced?'var(--ok)':thisHive.version?'var(--warn)':'var(--err)';
+          const label=thisHive.synced?thisHive.version:thisHive.version?thisHive.version+' (outdated)':'missing';
+          o+=`<div class="queen-section"><div class="queen-section-hdr">Brain Version</div>
+            <div class="queen-brain-row"><span class="brain-section">${esc(hiveName)}</span><span style="font-family:var(--mono);font-size:.6875rem;color:${cls};font-weight:600">${label}</span></div>
+            <div class="queen-brain-row"><span class="brain-section">Template</span><span style="font-family:var(--mono);font-size:.6875rem;color:var(--text3)">${bs.templateVersion||'unknown'}</span></div>`;
+          if(!thisHive.synced) o+=`<div style="padding:8px 14px"><button class="btn btn-sm btn-accent" onclick="window._brainSync()">Sync</button></div>`;
           o+='</div>';
         }
+      }catch(e){}
+      o+='</div>';
+
+      if(hiveCustomSettings){
+        o+=`<div class="queen-sub-content${hiveQueenSubTab==='settings'?' active':''}">`;
+        o+=`<div class="queen-section"><div class="queen-section-hdr">Hive Settings</div>
+          <div class="queen-settings" id="queenSettingsPanel"><div style="text-align:center;padding:12px"><span class="spinner"></span></div></div></div>`;
         o+='</div>';
       }
-      o+='</div></div>';
+
+      o+='</div>';
       tabCache.queen=o;
       const target=$('queenPanel');
       if(target)target.innerHTML=o;
+      if(hiveCustomSettings && hiveQueenSubTab==='settings') setTimeout(()=>loadQueenSettings(hiveName),0);
     }catch(e){ const target=$('queenPanel'); if(target)target.innerHTML='<div class="queen-empty">Queen not available</div>'; }
+  }
+
+  function smartTrunc(s,max=100){
+    if(!s||s.length<=max)return s;
+    const cut=s.lastIndexOf(' ',max);
+    return (cut>max*0.5?s.substring(0,cut):s.substring(0,max))+'...';
   }
 
   function fmtDur(s){
@@ -2159,6 +2279,161 @@ input[type="text"]::placeholder{color:var(--text3)}
     if(s<3600)return Math.floor(s/60)+'m';
     return Math.floor(s/3600)+'h '+Math.floor((s%3600)/60)+'m';
   }
+
+  // ── Global Queen Page ──
+  async function renderGlobalQueenPage(){
+    const el=$('hiveView');if(!el)return;
+    if(!el.querySelector('.queen-global-title'))
+      el.innerHTML='<div style="text-align:center;padding:40px"><span class="spinner"></span></div>';
+    try{
+      const qs=await api('/api/queen/status');
+      _queenBeeCount=qs.bees||0;
+      let o='<div class="queen-grid">';
+      o+=`<div class="queen-global-title"><svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 12h12L13 5l-3 3-2-4-2 4-3-3z" stroke-linejoin="round"/><path d="M2 12v1.5h12V12"/></svg>Queen Supervisor</div>`;
+      const statusColor=qs.alive?'var(--ok)':'var(--err)';
+      let brainTag='';
+      try{const bs=await api('/api/queen/brain/status');brainTag=` - brain ${bs.templateVersion||'?'}`;}catch(e){}
+      o+=`<div class="queen-status-bar">
+        <span class="queen-dot" style="background:${statusColor}"></span>
+        <strong>${qs.alive?'Active':'Inactive'}</strong>
+        <span class="queen-meta">Uptime ${fmtDur(qs.uptime)} - ${qs.auditCount} audits - ${qs.bees} bees - ${qs.escalations} escalations${brainTag}</span>
+      </div>`;
+      o+=`<div class="queen-sub-tabs">
+        <button class="queen-sub-tab${queenSubTab==='overview'?' active':''}" onclick="window._queenSubTab('overview')">Overview</button>
+        <button class="queen-sub-tab${queenSubTab==='brain'?' active':''}" onclick="window._queenSubTab('brain')">Brain Versions</button>
+        <button class="queen-sub-tab${queenSubTab==='settings'?' active':''}" onclick="window._queenSubTab('settings')">Settings</button>
+        <button class="queen-sub-tab${queenSubTab==='events'?' active':''}" onclick="window._queenSubTab('events')">Events</button>
+      </div>`;
+
+      o+=`<div class="queen-sub-content${queenSubTab==='overview'?' active':''}">`;
+      const bees=qs.beeDetails||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">All Bees<span class="section-count">${bees.length}</span></div>`;
+      if(bees.length===0) o+='<div class="queen-empty">No bees connected</div>';
+      else for(const b of bees){
+        const sc=b.disconnected?'var(--err)':b.lastSeen<60?'var(--ok)':b.lastSeen<300?'var(--warn)':'var(--err)';
+        const status=b.disconnected?'dead':b.lastSeen<60?'alive':b.lastSeen<300?'idle ('+fmtDur(b.lastSeen)+')':'stale ('+fmtDur(b.lastSeen)+')';
+        o+=`<div class="queen-esc-row" style="cursor:pointer" onclick="window._navToHive('${esc(b.hive)}')"><span class="esc-bee">${b.bee}</span><span style="color:var(--text3);font-size:.75rem">${b.hive}</span><span class="queen-dot" style="background:${sc};margin-left:auto"></span><span style="color:var(--text3);font-size:.75rem">${status}</span><span class="esc-reason">${esc(b.task||'-')}</span></div>`;
+      }
+      o+='</div>';
+
+      // Per-hive brain status in overview
+      try{
+        const bs=await api('/api/queen/brain/status');
+        if(bs.hives&&bs.hives.length>1){
+          o+=`<div class="queen-section"><div class="queen-section-hdr">Hive Brain Status<span class="section-count">${bs.hives.length}</span></div>`;
+          for(const h of bs.hives){
+            const cls=h.synced?'var(--ok)':h.version?'var(--warn)':'var(--err)';
+            const label=h.synced?'synced':h.version?'outdated':'missing';
+            o+=`<div class="queen-brain-row" style="cursor:pointer" onclick="window._navToHive('${esc(h.name)}')"><span class="brain-section">${esc(h.name)}</span><span style="font-family:var(--mono);font-size:.6875rem;color:${cls};font-weight:600">${label}</span></div>`;
+          }
+          o+='</div>';
+        }
+      }catch(e){}
+
+      const escs=qs.escalationDetails||[];
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Active Escalations<span class="section-count">${escs.length}</span></div>`;
+      if(escs.length===0) o+='<div class="queen-empty">No active escalations</div>';
+      else for(const e of escs){
+        const lvlClass='esc-'+e.level;
+        o+=`<div class="queen-esc-row ${lvlClass}"><span class="esc-level">${e.level}</span><span class="esc-bee">${e.bee}</span><span style="color:var(--text3);font-size:.75rem">${fmtDur(e.elapsed)}</span><span class="esc-reason">${esc(e.reason)}</span></div>`;
+      }
+      o+='</div></div>';
+
+      o+=`<div class="queen-sub-content${queenSubTab==='brain'?' active':''}">`;
+      try{
+        const bs=await api('/api/queen/brain/status');
+        o+=`<div class="queen-section"><div class="queen-section-hdr">Brain Versions<span class="section-count">template: ${bs.templateVersion||'unknown'}</span></div>`;
+        if(bs.hives&&bs.hives.length>0){
+          for(const h of bs.hives){
+            const cls=h.synced?'var(--ok)':h.version?'var(--warn)':'var(--err)';
+            const label=h.synced?h.version:h.version?h.version+' (outdated)':'missing';
+            o+=`<div class="queen-brain-row"><span class="brain-section">${esc(h.name)}</span><span style="font-family:var(--mono);font-size:.6875rem;color:${cls};font-weight:600;cursor:pointer" onclick="window._openTemplate()" title="Click to view/edit template">${label}</span></div>`;
+          }
+          o+=`<div style="padding:8px 14px;display:flex;gap:8px"><button class="btn btn-sm btn-accent" onclick="window._brainSync()">Sync All</button><button class="btn btn-sm btn-ghost" onclick="window._openTemplate()">View Template</button></div>`;
+        } else o+='<div class="queen-empty">No hives registered</div>';
+        o+='</div>';
+      }catch(e){o+='<div class="queen-empty">Could not load brain status</div>';}
+      o+='</div>';
+
+      o+=`<div class="queen-sub-content${queenSubTab==='events'?' active':''}">`;
+      try{
+        const events=await api('/api/queen/events?limit=50');
+        const types=[...new Set(events.map(e=>e.type))].sort();
+        const filtered=_queenEventFilter?events.filter(e=>e.type===_queenEventFilter):events;
+        o+=`<div class="queen-section"><div class="queen-section-hdr">Recent Events<span class="section-count">${filtered.length}${_queenEventFilter?' / '+events.length:''}</span></div>`;
+        if(types.length>1){
+          o+='<div class="ev-filter-bar">';
+          for(const t of types){
+            const count=events.filter(e=>e.type===t).length;
+            o+=`<button class="ev-filter-pill${_queenEventFilter===t?' active':''}" onclick="window._setEventFilter('${t}')">${t} (${count})</button>`;
+          }
+          o+='</div>';
+        }
+        if(filtered.length===0) o+='<div class="queen-empty">No events recorded</div>';
+        else{
+          o+='<div class="queen-events" style="max-height:500px">';
+          for(const ev of filtered){
+            const time=ev.at?new Date(ev.at).toLocaleTimeString():'';
+            o+=`<div class="queen-event"><span class="ev-time">${time}</span><span class="ev-type ev-${ev.type}">${ev.type}</span>`;
+            if(ev.hive) o+=`<span style="font-family:var(--mono);font-size:.625rem;color:var(--text3)">${ev.hive}</span>`;
+            if(ev.bee) o+=`<span class="ev-bee">${ev.bee}</span>`;
+            if(ev.target) o+=`<span class="ev-bee" style="color:var(--text3)">&rarr; ${ev.target}</span>`;
+            if(ev.reason) o+=`<span class="ev-detail">${smartTrunc(esc(ev.reason))}</span>`;
+            else if(ev.message) o+=`<span class="ev-detail">${smartTrunc(esc(ev.message))}</span>`;
+            else if(ev.summary) o+=`<span class="ev-detail">${smartTrunc(esc(ev.summary))}</span>`;
+            else if(ev.resource) o+=`<span class="ev-detail">${esc(ev.resource)}</span>`;
+            o+='</div>';
+          }
+          o+='</div>';
+        }
+        o+='</div></div>';
+      }catch(e){o+='<div class="queen-empty">Could not load events</div></div>';}
+
+      // ── Settings sub-tab (global) ──
+      o+=`<div class="queen-sub-content${queenSubTab==='settings'?' active':''}">`;
+      o+=`<div class="queen-section"><div class="queen-section-hdr">Global Settings</div>
+        <div class="queen-settings" id="globalQueenSettingsPanel"><div style="text-align:center;padding:12px"><span class="spinner"></span></div></div></div>`;
+      o+='</div>';
+
+      o+='</div>';
+      el.innerHTML=o;
+      if(queenSubTab==='settings') setTimeout(()=>loadGlobalQueenSettings(),0);
+    }catch(e){el.innerHTML='<div class="queen-empty">Queen not available</div>';}
+  }
+
+  window._queenSubTab=function(tab){
+    queenSubTab=tab;
+    renderGlobalQueenPage();
+  };
+
+  window._hiveQueenSubTab=function(tab){
+    hiveQueenSubTab=tab;
+    renderQueenPanel();
+  };
+
+  window._toggleHiveCustom=function(hiveName){
+    hiveCustomSettings=!hiveCustomSettings;
+    if(hiveCustomSettings) hiveQueenSubTab='settings';
+    renderQueenPanel();
+  };
+
+  window._navToHive=function(hiveName){
+    const h=hives.find(x=>x.name===hiveName);
+    if(h){queenPageOpen=false;stopQueenAutoRefresh();sel=h;location.hash=h.name;renderSidebar();renderHiveView();}
+  };
+
+  let _queenAutoRefresh=null;
+  function startQueenAutoRefresh(){
+    stopQueenAutoRefresh();
+    _queenAutoRefresh=setInterval(()=>{if(queenPageOpen)renderGlobalQueenPage();},15000);
+  }
+  function stopQueenAutoRefresh(){if(_queenAutoRefresh){clearInterval(_queenAutoRefresh);_queenAutoRefresh=null;}}
+
+  window._setEventFilter=function(type){
+    _queenEventFilter=_queenEventFilter===type?null:type;
+    if(queenPageOpen) renderGlobalQueenPage();
+    else renderQueenPanel();
+  };
 
   window._brainSync=async function(){
     try{
@@ -2184,6 +2459,171 @@ input[type="text"]::placeholder{color:var(--text3)}
       toast('Decree broadcast','ok');
       renderQueenPanel();
     }catch(e){toast('Failed to broadcast','err');}
+  };
+
+  async function loadGlobalQueenSettings(){
+    const panel=$('globalQueenSettingsPanel');
+    if(!panel)return;
+    try{
+      const data=await api('/api/queen/config');
+      const defs=data.defaults||{};
+      const cfg=data.global||{};
+      const esc_cfg=cfg.escalation||{};
+      const brain_cfg=cfg.brain||{};
+      const esc_def=defs.escalation||{};
+      const brain_def=defs.brain||{};
+      const field=(id,label,hint,val,def)=>`<div class="queen-field"><div class="queen-field-info"><span class="queen-field-label">${label}</span><span class="queen-field-hint">${hint}</span></div><input type="number" id="gqs_${id}" value="${val!=null?val:def}" min="0" placeholder="${def}"></div>`;
+      let o='';
+      o+=`<div class="queen-settings-scope-hint">These settings apply to all hives. Individual hives can override via their Queen tab.</div>`;
+      o+='<div class="queen-settings-cards">';
+      const enabled=cfg.enabled!=null?cfg.enabled:defs.enabled;
+      o+=`<div class="queen-settings-card"><div class="queen-card-title">General</div><div class="queen-card-body">`;
+      o+=`<div class="queen-field"><div class="queen-field-info"><span class="queen-field-label">Enabled</span><span class="queen-field-hint">Whether the Queen actively monitors hives</span></div><select id="gqs_enabled"><option value="true"${enabled!==false?' selected':''}>On</option><option value="false"${enabled===false?' selected':''}>Off</option></select></div>`;
+      o+=field('audit_interval_s','Audit interval','How often the Queen checks hive state (seconds)',cfg.audit_interval_s,defs.audit_interval_s);
+      o+=field('heartbeat_stale_s','Stale threshold','Seconds without a ping before a bee is marked stale',cfg.heartbeat_stale_s,defs.heartbeat_stale_s);
+      o+=`</div></div>`;
+      o+=`<div class="queen-settings-card"><div class="queen-card-title">Escalation chain</div><div class="queen-card-body">`;
+      o+=field('notice_s','Notice','Seconds after stale detection before logging a notice',esc_cfg.notice_s,esc_def.notice_s);
+      o+=field('warning_s','Warning','Additional seconds before sending inbox warning',esc_cfg.warning_s,esc_def.warning_s);
+      o+=field('directive_s','Directive','Additional seconds before tmux injection',esc_cfg.directive_s,esc_def.directive_s);
+      o+=field('override_s','Override','Additional seconds before deleting stale claim',esc_cfg.override_s,esc_def.override_s);
+      o+=`</div></div>`;
+      o+=`<div class="queen-settings-card"><div class="queen-card-title">Brain audit</div><div class="queen-card-body">`;
+      o+=field('section_max_lines','Section limit','Max lines per CLAUDE.md section before extraction',brain_cfg.section_max_lines,brain_def.section_max_lines);
+      o+=field('total_max_lines','Total limit','Max total CLAUDE.md lines before warning',brain_cfg.total_max_lines,brain_def.total_max_lines);
+      o+=field('brain_audit_interval_s','Audit interval','How often brain audit runs (seconds)',brain_cfg.audit_interval_s,brain_def.audit_interval_s);
+      o+=`</div></div>`;
+      o+='</div>';
+      o+=`<div class="queen-settings-actions"><button class="btn btn-ghost btn-sm" onclick="window._resetGlobalSettings()">Reset</button><button class="btn btn-accent btn-sm" onclick="window._saveGlobalSettings()">Save</button></div>`;
+      panel.innerHTML=o;
+    }catch(e){panel.innerHTML='<div class="queen-empty">Could not load settings</div>';}
+  }
+
+  window._saveGlobalSettings=async function(){
+    const v=id=>{const el=$('gqs_'+id);return el?parseInt(el.value,10):0;};
+    const enabledEl=$('gqs_enabled');
+    const config={
+      enabled:enabledEl?enabledEl.value==='true':true,
+      audit_interval_s:v('audit_interval_s'),
+      heartbeat_stale_s:v('heartbeat_stale_s'),
+      escalation:{notice_s:v('notice_s'),warning_s:v('warning_s'),directive_s:v('directive_s'),override_s:v('override_s')},
+      brain:{section_max_lines:v('section_max_lines'),total_max_lines:v('total_max_lines'),audit_interval_s:v('brain_audit_interval_s')}
+    };
+    try{
+      await api('/api/queen/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope:'global',config})});
+      toast('Global settings saved','ok');
+    }catch(e){toast('Failed to save settings','err');}
+  };
+
+  window._resetGlobalSettings=async function(){
+    try{
+      await api('/api/queen/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({scope:'global',config:{}})});
+      toast('Global settings reset','ok');
+      loadGlobalQueenSettings();
+    }catch(e){toast('Failed to reset settings','err');}
+  };
+
+  async function loadQueenSettings(hiveName){
+    const panel=$('queenSettingsPanel');
+    if(!panel)return;
+    try{
+      const data=await api(`/api/queen/config?hive=${encodeURIComponent(hiveName)}`);
+      const defs=data.defaults||{};
+      const cfg=data.hiveOverrides||{};
+      const esc_cfg=cfg.escalation||{};
+      const brain_cfg=cfg.brain||{};
+      const esc_def=defs.escalation||{};
+      const brain_def=defs.brain||{};
+
+      const field=(id,label,hint,val,def)=>`<div class="queen-field"><div class="queen-field-info"><span class="queen-field-label">${label}</span><span class="queen-field-hint">${hint}</span></div><input type="number" id="qs_${id}" value="${val!=null?val:''}" min="0" placeholder="${def}"></div>`;
+
+      let o='';
+      o+=`<div class="queen-settings-scope-hint">Overrides for <strong>${esc(hiveName)}</strong> only. Empty fields fall back to global settings.</div>`;
+      o+='<div class="queen-settings-cards">';
+
+      const enabled=cfg.enabled!=null?cfg.enabled:null;
+      o+=`<div class="queen-settings-card"><div class="queen-card-title">General</div><div class="queen-card-body">`;
+      o+=`<div class="queen-field"><div class="queen-field-info"><span class="queen-field-label">Enabled</span><span class="queen-field-hint">Whether the Queen actively monitors this hive</span></div><select id="qs_enabled"><option value="true"${enabled===true?' selected':''}>On</option><option value="false"${enabled===false?' selected':''}>Off</option></select></div>`;
+      o+=field('audit_interval_s','Audit interval','How often the Queen checks hive state (seconds)',cfg.audit_interval_s,defs.audit_interval_s);
+      o+=field('heartbeat_stale_s','Stale threshold','Seconds without a ping before a bee is marked stale',cfg.heartbeat_stale_s,defs.heartbeat_stale_s);
+      o+=`</div></div>`;
+
+      o+=`<div class="queen-settings-card"><div class="queen-card-title">Escalation chain</div><div class="queen-card-body">`;
+      o+=field('notice_s','Notice','Seconds after stale detection before logging a notice',esc_cfg.notice_s,esc_def.notice_s);
+      o+=field('warning_s','Warning','Additional seconds before sending inbox warning',esc_cfg.warning_s,esc_def.warning_s);
+      o+=field('directive_s','Directive','Additional seconds before tmux injection',esc_cfg.directive_s,esc_def.directive_s);
+      o+=field('override_s','Override','Additional seconds before deleting stale claim',esc_cfg.override_s,esc_def.override_s);
+      o+=`</div></div>`;
+
+      o+=`<div class="queen-settings-card"><div class="queen-card-title">Brain audit</div><div class="queen-card-body">`;
+      o+=field('section_max_lines','Section limit','Max lines per CLAUDE.md section before extraction',brain_cfg.section_max_lines,brain_def.section_max_lines);
+      o+=field('total_max_lines','Total limit','Max total CLAUDE.md lines before warning',brain_cfg.total_max_lines,brain_def.total_max_lines);
+      o+=field('brain_audit_interval_s','Audit interval','How often brain audit runs (seconds)',brain_cfg.audit_interval_s,brain_def.audit_interval_s);
+      o+=`</div></div>`;
+
+      o+='</div>';
+      o+=`<div class="queen-settings-actions"><button class="btn btn-ghost btn-sm" onclick="resetQueenSettings('${esc(hiveName)}')">Clear overrides</button><button class="btn btn-accent btn-sm" onclick="saveQueenSettings('${esc(hiveName)}')">Save</button></div>`;
+
+      panel.innerHTML=o;
+    }catch(e){panel.innerHTML='<div class="queen-empty">Could not load settings</div>';}
+  }
+
+
+  window.saveQueenSettings=async function(hiveName){
+    const v=id=>{const el=$('qs_'+id);return el?parseInt(el.value,10):0;};
+    const enabledEl=$('qs_enabled');
+    const config={
+      enabled:enabledEl?enabledEl.value==='true':true,
+      audit_interval_s:v('audit_interval_s'),
+      heartbeat_stale_s:v('heartbeat_stale_s'),
+      escalation:{notice_s:v('notice_s'),warning_s:v('warning_s'),directive_s:v('directive_s'),override_s:v('override_s')},
+      brain:{section_max_lines:v('section_max_lines'),total_max_lines:v('total_max_lines'),audit_interval_s:v('brain_audit_interval_s')}
+    };
+    try{
+      await api('/api/queen/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({hive:hiveName,config})});
+      toast('Hive settings saved','ok');
+    }catch(e){toast('Failed to save settings','err');}
+  };
+
+  window.resetQueenSettings=async function(hiveName){
+    try{
+      await api('/api/queen/config',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({hive:hiveName,config:{}})});
+      toast('Hive overrides cleared','ok');
+      loadQueenSettings(hiveName);
+    }catch(e){toast('Failed to reset settings','err');}
+  };
+
+  window._openTemplate=async function(){
+    try{
+      const data=await api('/api/queen/template');
+      $('templateEditor').value=data.custom||data.template;
+      $('templateVersion').textContent='Version: '+(data.version||'unknown')+(data.custom?' (customized)':' (built-in)');
+      $('templateModal').classList.add('open');
+    }catch(e){toast('Could not load template','err');}
+  };
+
+  window._closeTemplate=function(){
+    $('templateModal').classList.remove('open');
+  };
+
+  window._saveTemplate=async function(){
+    const content=$('templateEditor').value;
+    try{
+      await api('/api/queen/template',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({template:content})});
+      toast('Template saved','ok');
+      window._closeTemplate();
+      await window._brainSync();
+    }catch(e){toast('Failed to save template','err');}
+  };
+
+  window._resetTemplate=async function(){
+    try{
+      await api('/api/queen/template',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({template:''})});
+      const data=await api('/api/queen/template');
+      $('templateEditor').value=data.template;
+      $('templateVersion').textContent='Version: '+(data.version||'unknown')+' (built-in)';
+      toast('Template reset to built-in','ok');
+    }catch(e){toast('Failed to reset template','err');}
   };
 
   window.saveBrain=async function(){
@@ -2637,6 +3077,7 @@ input[type="text"]::placeholder{color:var(--text3)}
 
   document.addEventListener('click',function(e){
     if(_notifOpen&&!e.target.closest('.notif-panel')&&!e.target.closest('.notif-btn')){_notifOpen=false;$('notifPanel').classList.remove('open');}
+    if($('templateModal').classList.contains('open')&&!e.target.closest('.template-modal'))window._closeTemplate();
   });
 
   document.addEventListener('click',function(e){
@@ -2742,12 +3183,16 @@ input[type="text"]::placeholder{color:var(--text3)}
     $('searchInput').addEventListener('input',triggerSearch);
     const hashParts=location.hash.slice(1).split('/').filter(Boolean).map(decodeURIComponent);
     if(hashParts.length){
-      const h=hives.find(x=>x.name===hashParts[0]);
-      if(h){
-        sel=h;renderSidebar();renderHiveView();loadTab('brain');document.title='fleet · '+h.name;
-        if(hashParts[1]){
-          await window._openBee(hashParts[1]);
-          if(hashParts[2])window._beeTab(hashParts[2]);
+      if(hashParts[0]==='queen'){
+        window._openQueenPage();
+      } else {
+        const h=hives.find(x=>x.name===hashParts[0]);
+        if(h){
+          sel=h;renderSidebar();renderHiveView();loadTab('brain');document.title='fleet · '+h.name;
+          if(hashParts[1]){
+            await window._openBee(hashParts[1]);
+            if(hashParts[2])window._beeTab(hashParts[2]);
+          }
         }
       }
     }
