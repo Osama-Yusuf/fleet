@@ -1019,6 +1019,11 @@ html, body { background-color: var(--bg); color: var(--text); }
         <h3>No overview</h3>
         <p>Costs, progress, what's running, what's idle. You'd have to check each session individually to piece it together.</p>
       </div>
+      <div class="why-card">
+        <div class="why-icon why-icon--die" aria-hidden="true">!</div>
+        <h3>No oversight</h3>
+        <p>Nobody detects when a session goes idle, forgets to release a task, or edits the same files as another session.</p>
+      </div>
     </div>
   </section>
 
@@ -1260,27 +1265,31 @@ html, body { background-color: var(--bg); color: var(--text); }
       </div>
 
       <div class="cmd-group">
-        <div class="cmd-group-title">Smart</div>
+        <div class="cmd-group-title">Queen + Brain</div>
         <div class="cmd-list">
+          <div class="cmd-card">
+            <div class="cmd-name">serve</div>
+            <div class="cmd-desc">Dashboard + Queen supervisor</div>
+          </div>
+          <div class="cmd-card">
+            <div class="cmd-name">queen</div>
+            <div class="cmd-desc">Show Queen status and leases</div>
+          </div>
+          <div class="cmd-card">
+            <div class="cmd-name">brain status</div>
+            <div class="cmd-desc">Coordination version per hive</div>
+          </div>
+          <div class="cmd-card">
+            <div class="cmd-name">brain sync</div>
+            <div class="cmd-desc">Sync coordination rules to hives</div>
+          </div>
           <div class="cmd-card">
             <div class="cmd-name">doctor</div>
             <div class="cmd-desc">Check symlink health, fix issues</div>
           </div>
           <div class="cmd-card">
-            <div class="cmd-name">eject</div>
-            <div class="cmd-desc">Extract a bee to standalone</div>
-          </div>
-          <div class="cmd-card">
-            <div class="cmd-name">refresh</div>
-            <div class="cmd-desc">Re-sync all symlinks</div>
-          </div>
-          <div class="cmd-card">
-            <div class="cmd-name">clean</div>
-            <div class="cmd-desc">Remove dead bee dirs</div>
-          </div>
-          <div class="cmd-card">
             <div class="cmd-name">scan</div>
-            <div class="cmd-desc">Find hives and standalone stray bees</div>
+            <div class="cmd-desc">Find hives and stray bees</div>
           </div>
         </div>
       </div>

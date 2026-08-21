@@ -100,6 +100,7 @@ test('gitData derives commits, touched files, dirty files, and PR references', t
   assert.deepEqual(data.prs.map(pr => pr.number), [42]);
   assert.ok(data.files.some(file => file.file === 'app.js' && file.dirty));
   assert.ok(data.dirtyFiles.some(file => file.path === 'notes.md'));
+  assert.ok(data.dirtyFiles.some(file => file.path === 'app.js'), 'modified tracked file should appear in dirtyFiles with correct path');
 });
 
 test('claudeData attributes tools and models only to the requested bee', t => {

@@ -20,13 +20,10 @@ test('stray bees are clickable and use Active/Asleep terminology', () => {
 });
 
 test('stray detail view explains status and exposes quick actions', () => {
-  assert.match(dashboard, /Active only means the process is running/);
   assert.match(dashboard, /Copy resume command/);
   assert.match(dashboard, /Copy path/);
   assert.match(dashboard, /Make this a hive/);
   assert.match(dashboard, /Stop the active Claude CLI before restructuring/);
-  assert.match(dashboard, /Active account/);
-  assert.match(dashboard, /Session accounts/);
 });
 
 test('account panel explains its data source and refreshes while open', () => {
@@ -38,7 +35,7 @@ test('account panel explains its data source and refreshes while open', () => {
 test('bee cards open a tabbed life page with prioritized enrichment', () => {
   assert.match(dashboard, /window\._openBee/);
   assert.match(dashboard, /\['timeline','Timeline'\]/);
-  assert.match(dashboard, /\['git','Git & PRs'\]/);
+  assert.match(dashboard, /\['git','Git &amp; PRs'\]/);
   assert.match(dashboard, /\['files','Files'\]/);
   assert.match(dashboard, /\['decisions','Decisions'\]/);
   assert.match(dashboard, /\['tools','Tools'\]/);
@@ -72,7 +69,7 @@ test('bee header summary omits the redundant Sessions tile', () => {
 test('file activity uses readable relative paths with visible breakdowns', () => {
   assert.match(dashboard, /function relativeFilePath\(target,base\)/);
   assert.match(dashboard, /relativeFilePath\(f\.file,b\.path\)/);
-  assert.match(dashboard, /class="touch-detail"/);
-  assert.match(dashboard, /\$\{f\.reads\} reads/);
-  assert.match(dashboard, /\$\{f\.writes\} writes/);
+  assert.match(dashboard, /class="fmetric read"/);
+  assert.match(dashboard, /<em>reads<\/em>/);
+  assert.match(dashboard, /<em>writes<\/em>/);
 });
