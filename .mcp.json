@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fleetode": {
+      "type": "http",
+      "url": "http://127.0.0.1:3847/mcp",
+      "headers": {
+        "X-Bee-Id": "bee2",
+        "X-Hive-Id": "fleet"
+      }
+    }
+  }
+}
