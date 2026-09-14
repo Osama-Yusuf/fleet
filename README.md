@@ -1,6 +1,6 @@
 # fleet
 
-Multi-session Claude Code CLI manager — one brain, many sessions.
+Multi-session Claude Code CLI manager — one brain, many workers, one queen.
 
 ## The Problem
 
@@ -10,9 +10,10 @@ When you run multiple Claude Code CLI sessions on the same project, a few practi
 - **Slow session setup** — Bootstrapping another Claude session means copying the project, restoring trust and permissions, finding the right context, and remembering how to resume it.
 - **Brain fragmentation** — Each duplicate gets its own CLAUDE.md. Knowledge drifts. One session discovers something, the others never know.
 - **No coordination** — Sessions don't know what the others are working on. They collide, duplicate effort, or overwrite each other.
+- **No oversight** — Nobody detects when a session goes idle, forgets to release a task, or edits the same files as another session.
 - **Stray projects** — Standalone Claude workspaces accumulate across your repos with no clear view of which ones belong together.
 
-Fleet gives those sessions a lightweight home: one shared brain (`CLAUDE.md`), reproducible worker sessions (bees), and one parent directory (the hive). Spawning a bee bootstraps a trusted, resumable Claude workspace in one command; scanning also surfaces standalone “stray bees” before you decide whether to turn one into a hive or adopt it into an existing one.
+Fleet gives those sessions a lightweight home: one shared brain (`CLAUDE.md`), reproducible worker sessions (bees), one parent directory (the hive), and a Queen supervisor that keeps everything running. Spawning a bee bootstraps a trusted, resumable Claude workspace in one command; scanning also surfaces standalone "stray bees" before you decide whether to turn one into a hive or adopt it into an existing one.
 
 ## Install
 
@@ -93,11 +94,149 @@ Every bee points to the entire shared core—not only the brain. Tasks, history,
 
 ```mermaid
 flowchart LR
-    A["1 · Spawn<br/>isolated workspace"] --> B["2 · Claim<br/>visible task"]
-    B --> C["3 · Coordinate<br/>avoid collisions"]
-    C --> D["4 · Record<br/>decisions + progress"]
-    D --> E["5 · Resume<br/>continue with context"]
+    A["1 · Ping<br/>announce yourself"] --> B["2 · Claim<br/>declare your task"]
+    B --> C["3 · Work<br/>check for conflicts"]
+    C --> D["4 · Journal<br/>log what you did"]
+    D --> E["5 · Release<br/>free your claim"]
 ```
+
+### Birth and Death
+
+```mermaid
+flowchart TB
+    CONNECT["Bee connects<br/><i>first fleet_ping</i>"]
+    ONBOARD{"Queen onboarding<br/>check"}
+    STALE["Stale claim?<br/><i>from previous session</i>"]
+    INBOX["Unread inbox?"]
+    BEHIND["Branch behind?"]
+    CLEAR["All clear —<br/>start working"]
+    WORK["Working<br/><i>pinging every 60s</i>"]
+    TIMEOUT["Heartbeat timeout<br/><i>120s no ping</i>"]
+    DEAD["Bee disconnect<br/><i>Queen flags open claim</i>"]
+    RECONNECT["Bee pings again<br/><i>reconnect logged</i>"]
+
+    CONNECT --> ONBOARD
+    ONBOARD --> STALE --> CLEAR
+    ONBOARD --> INBOX --> CLEAR
+    ONBOARD --> BEHIND --> CLEAR
+    CLEAR --> WORK
+    WORK --> TIMEOUT --> DEAD
+    DEAD -.->|bee restarts| RECONNECT --> WORK
+
+    classDef check fill:#fef3c7,stroke:#f59e0b,color:#111827
+    classDef active fill:#ecfdf5,stroke:#10b981,color:#111827
+    classDef dead fill:#fecaca,stroke:#ef4444,color:#111827
+    class ONBOARD,STALE,INBOX,BEHIND check
+    class CONNECT,CLEAR,WORK,RECONNECT active
+    class TIMEOUT,DEAD dead
+```
+
+## The Queen
+
+The Queen is a supervisor that runs inside `fleet serve`. It monitors all registered hives, detects problems, and takes action — no human babysitting required.
+
+```mermaid
+flowchart TB
+    subgraph Server["fleet serve"]
+        DASH["Dashboard<br/><i>:3847</i>"]
+        API["REST API<br/><i>/api/*</i>"]
+        MCP["MCP Server<br/><i>/mcp</i>"]
+        QUEEN["Queen"]
+    end
+
+    subgraph Hive
+        B1["bee1<br/><i>tmux session</i>"]
+        B2["bee2<br/><i>tmux session</i>"]
+        B3["bee3<br/><i>tmux session</i>"]
+        ACTIVE[".fleet/active/"]
+        JOURNAL[".fleet/journal.md"]
+        EVENTS[".fleet/queen/<br/>event-log.jsonl"]
+    end
+
+    B1 <-->|MCP tools| MCP
+    B2 <-->|MCP tools| MCP
+    B3 <-->|MCP tools| MCP
+    QUEEN -->|audit| ACTIVE
+    QUEEN -->|inject via tmux| B1
+    QUEEN -->|inject via tmux| B2
+    QUEEN -->|write| JOURNAL
+    QUEEN -->|write| EVENTS
+
+    classDef server fill:#eff6ff,stroke:#3b82f6,color:#111827
+    classDef bee fill:#ecfdf5,stroke:#10b981,color:#111827
+    classDef state fill:#fff7ed,stroke:#f59e0b,color:#111827
+    class DASH,API,MCP,QUEEN server
+    class B1,B2,B3 bee
+    class ACTIVE,JOURNAL,EVENTS state
+```
+
+### What the Queen Does
+
+- **Onboards new bees** — first `fleet_ping` triggers checks: stale claim from a previous session? unread inbox? branch behind upstream? Issues are returned in the ping response so the bee can act immediately
+- **Detects bee death** — when a known bee stops pinging (heartbeat stale >120s), the Queen logs a disconnect event and flags the open claim. When it pings again, a reconnect is logged
+- **Audits claims every 15s** — detects idle, done, or stale claim files that bees forgot to release
+- **Detects file conflicts** — warns when two bees are editing the same files via `git diff` overlap detection
+- **Graduates escalation** — notice → warning → directive → override, giving bees a chance to self-correct before the Queen acts
+- **Injects via tmux** — sends instructions directly into a bee's Claude session when it runs in tmux
+- **Cleans up directly** — at override level, the Queen deletes stale claim files and journals the cleanup (no drone needed)
+- **Syncs git every 5min** — fetches origin, checks each bee's divergence from the default branch. Clean tree? Auto-rebase. Dirty tree? Notifies the bee via inbox + tmux
+- **Broadcasts via tmux + inbox** — announcements reach active bees immediately via tmux, and are stored in inbox for offline bees
+- **Restructures the brain** — detects oversized CLAUDE.md sections (>50 lines) and extracts them to `docs/` with a pointer left behind
+- **Spawns review drones** — when a bee requests review, the Queen spawns a `claude --print` session to analyze the work
+- **Prunes old drones** — completed drone records are cleaned up after 1 hour
+
+### Escalation Chain
+
+```mermaid
+flowchart LR
+    N["Notice<br/><i>immediate</i>"] -->|30s| W["Warning<br/><i>inbox message</i>"]
+    W -->|2min| D["Directive<br/><i>tmux injection</i>"]
+    D -->|5min| O["Override<br/><i>claim deleted</i>"]
+
+    classDef notice fill:#fef3c7,stroke:#f59e0b,color:#111827
+    classDef warn fill:#fed7aa,stroke:#f97316,color:#111827
+    classDef directive fill:#fecaca,stroke:#ef4444,color:#111827
+    classDef override fill:#e11d48,stroke:#be123c,color:#fff
+    class N notice
+    class W warn
+    class D directive
+    class O override
+```
+
+Timers are configurable per hive via `.fleet/queen/config.json`.
+
+### MCP Tools
+
+Bees coordinate entirely through MCP tools — no direct file manipulation needed. The Queen validates every action.
+
+| Tool | Purpose |
+|------|---------|
+| `fleet_ping()` | Heartbeat (call every 60s). Returns status, pending messages, and what other bees are doing |
+| `fleet_claim(task)` | Claim a task. Queen checks for conflicts and file overlaps with other bees |
+| `fleet_release()` | Release your claim. Never write "idle" or "done" — always use this tool |
+| `fleet_journal(entry)` | Log completed work to the shared journal |
+| `fleet_check_inbox()` | Read pending messages from Queen or other bees |
+| `fleet_lock(resource)` | Exclusive lease on a shared resource (CLAUDE.md, configs) |
+| `fleet_unlock(resource)` | Release a lock |
+| `fleet_announce(message)` | Broadcast to all bees in your hive |
+| `fleet_request_review(summary)` | Ask the Queen to review your work |
+
+Each bee gets a `.mcp.json` automatically on spawn, connecting it to the fleet server with proper identity headers.
+
+### Running Bees in tmux
+
+For full Queen integration, run each bee in a tmux session:
+
+```bash
+tmux new-session -s bee1 -c ~/my-project/bee1
+claude
+
+# In another terminal tab:
+tmux new-session -s bee2 -c ~/my-project/bee2
+claude
+```
+
+The Queen discovers panes by matching `pane_current_path` — session names can be anything you want.
 
 ## Init — Repo Hive
 
@@ -229,11 +368,28 @@ fleet scan                            # Discover hives and standalone stray bees
 fleet event <type> "<message>"        # Add to the current bee's permanent timeline
 ```
 
+### Queen
+
+```bash
+fleet serve                           # Start dashboard + Queen supervisor
+fleet queen                           # Show Queen status
+fleet announce "<message>"            # Royal decree — broadcast to all bees
+```
+
 ### Interactive
 
 ```bash
 fleet                                 # No args = interactive menu
 ```
+
+## Dashboard
+
+`fleet serve` starts the dashboard at `http://localhost:3847` (configurable via `FLEET_PORT`).
+
+- **Sidebar** — all registered hives and stray bees, with live status
+- **Bee tabs** — timeline, git, files, decisions, tools, sessions per bee
+- **Queen tab** — live supervisor state: escalations, drones, brain audit, event log, and a Royal Decree input for broadcasting to all bees
+- **Search** — hive-wide full-text search with scroll-to-highlight
 
 ## Bee Life
 
@@ -274,12 +430,16 @@ Fleet registers hives it finds and separately reports standalone project directo
 
 ## Coordination Protocol
 
-`fleet init` injects a "Session Coordination" section into CLAUDE.md that tells each Claude session to:
+`fleet init` injects a coordination section into CLAUDE.md that tells each bee to use MCP tools for all coordination:
 
-1. **Register** — write `.fleet/active/<bee>.md` with current task
-2. **Check** — read other bees' active files before starting work
-3. **Update** — keep the brain current when discovering new info
-4. **Log** — append to `.fleet/journal.md` on significant completion
+```
+fleet_ping()    → heartbeat + situational awareness
+fleet_claim()   → declare task, get conflict warnings
+fleet_journal() → log completed work
+fleet_release() → free claim when done
+```
+
+The Queen validates every claim, detects file overlaps between bees, and escalates through notice → warning → directive → override when bees don't follow the protocol. At override level, the Queen deletes stale claims directly — no human intervention needed.
 
 ## Design Decisions
 
@@ -298,6 +458,10 @@ Fleet deliberately avoids `--shared` (alternates) because it creates a dependenc
 ### Why copies instead of symlinks for Claude project dirs?
 
 Each bee gets a **copy** of the Claude project directory (`~/.claude/projects/...`), not a symlink. Symlinks caused session state from one bee to leak into another — Claude would resume a different bee's conversation. Copies ensure full session isolation while preserving the session history from the source bee at the time of creation.
+
+### Why MCP instead of file-based coordination?
+
+The original design used file-based rules (RULES.md) that told bees to manually read/write `.fleet/active/` files. This drifted — bees would write "idle" to claim files instead of deleting them, skip reading RULES.md entirely, or forget to clean up. MCP tools solve this by embedding the rules in the tool descriptions (re-read on every call, immune to context compaction) and enforcing behavior at the protocol layer (the Queen validates on every `fleet_claim`, not relying on bees to self-police).
 
 ## License
 

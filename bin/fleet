@@ -81,13 +81,38 @@ wire_symlinks() {
 gitignore_add() {
   local dir="$1"
   local gi="$dir/.gitignore"
-  for entry in CLAUDE.md .fleet .claude; do
+  for entry in CLAUDE.md .fleet .claude .mcp.json; do
     if [[ -f "$gi" ]]; then
       grep -qxF "$entry" "$gi" 2>/dev/null || echo "$entry" >> "$gi"
     else
       echo "$entry" >> "$gi"
     fi
   done
+}
+
+_setup_mcp_config() {
+  local hive="$1" bee_name="$2"
+  local bee_path="${hive}/${bee_name}"
+  local hive_name
+  hive_name=$(jq -r '.name // empty' "$hive/.fleet/fleet.json" 2>/dev/null)
+  [[ -z "$hive_name" ]] && hive_name=$(basename "$hive")
+  local port
+  port=$(jq -r '.port // 3847' "$FLEET_GLOBAL_CONFIG" 2>/dev/null || echo 3847)
+  cat > "$bee_path/.mcp.json" <<MCPEOF
+{
+  "mcpServers": {
+    "fleetode": {
+      "type": "http",
+      "url": "http://127.0.0.1:${port}/mcp",
+      "headers": {
+        "X-Bee-Id": "${bee_name}",
+        "X-Hive-Id": "${hive_name}"
+      }
+    }
+  }
+}
+MCPEOF
+  dim "  MCP config: $bee_name -> $hive_name"
 }
 
 # ─── Settings merge ───
@@ -204,21 +229,46 @@ INST
 # ─── Coordination protocol ───
 inject_protocol() {
   local md="$1"
+  grep -q "## Coordination (Queen-managed)" "$md" 2>/dev/null && return
   grep -q "## Session Coordination" "$md" 2>/dev/null && return
   cat >> "$md" <<'PROTO'
 
-## Session Coordination (fleet-managed)
+## Coordination (Queen-managed)
 
-This project uses fleet for multi-session coordination. Multiple Claude Code sessions run in parallel — each in its own `bee*/` directory, all sharing this brain file.
+This project uses fleet with a Queen supervisor. Multiple Claude Code sessions run in parallel — each in its own `bee*/` directory. The Queen monitors all bees, detects problems, and escalates.
 
-**You MUST read and follow `.fleet/RULES.md` at the start of every session.** It contains strict operational rules for task claiming, status updates, and coordination. Violations cause dashboard desync and coordination conflicts.
+**All coordination through MCP tools — never touch `.fleet/` files directly.**
+
+### Lifecycle (MUST follow)
+1. `fleet_ping()` — call immediately on session start and every 60s after. Check `activeBees` to understand what others are working on.
+2. `fleet_claim(task)` — claim before doing ANY work. Check the response for `conflicts` (files another bee is also editing) and coordinate if found.
+3. Before coding, briefly assess: what files will you touch? Do they overlap with other bees' work? Any risks?
+4. Work on your task
+5. `fleet_journal(entry)` — log what you accomplished
+6. `fleet_release()` — release your claim when done. NEVER write "idle" or "done" to claim files.
+7. `fleet_request_review(summary)` — ask Queen to review (optional)
+
+### Available MCP tools
+- `fleet_ping()` — heartbeat (MUST call every 60s), returns Queen status + pending messages + what other bees are doing
+- `fleet_claim(task)` — claim a task (Queen validates no conflicts, detects file overlaps)
+- `fleet_release()` — release your claim
+- `fleet_journal(entry)` — log completed work
+- `fleet_check_inbox()` — check for messages from Queen or other bees
+- `fleet_lock(resource)` / `fleet_unlock(resource)` — exclusive lease on shared resources (use for CLAUDE.md, shared configs)
+- `fleet_announce(message)` — broadcast to all bees in your hive
+- `fleet_request_review(summary)` — request Queen review
+
+### Queen escalation (what happens if you don't follow the rules)
+- **Notice** (immediate) — logged, returned in your next `fleet_ping`
+- **Warning** (30s) — message added to your inbox
+- **Directive** (2min) — Queen injects instruction via tmux
+- **Override** (5min) — Queen DELETES your stale claim file directly and journals it
 
 ### Quick reference
-- `.fleet/RULES.md` — **mandatory rules** (read first, every session)
-- `.fleet/active/` — who's doing what right now
-- `.fleet/journal.md` — work history
-- `.fleet/profile.md` — project intelligence
 - `CLAUDE.md` — this file, the shared brain
+- `.fleet/journal.md` — work history (managed by `fleet_journal`)
+- `.fleet/active/` — claims (managed by `fleet_claim` / `fleet_release`)
+- `.fleet/queen/event-log.jsonl` — everything Queen did
 - `.claude/settings.local.json` — shared permissions
 PROTO
 }
@@ -532,6 +582,12 @@ EOF
   inject_protocol CLAUDE.md
   inject_rules .fleet
 
+  # ── MCP config per bee ──
+  for b in bee*; do
+    [[ -d "$b" ]] || continue
+    _setup_mcp_config "$PWD" "$b"
+  done
+
   echo ""
   ok "Fleet \"$name\" ready"
   for b in bee*; do
@@ -694,6 +750,7 @@ cmd_spawn() {
     fi
 
     _setup_bee_claude "$hive" "$bee" "${hive}/bee1"
+    _setup_mcp_config "$hive" "$bee"
     register_bee "$hive" "$bee" "spawn" "$branch"
     bump_next_bee "$hive"
   done
@@ -1263,8 +1320,12 @@ show_help() {
     event <type> <message>        Add to this bee's permanent timeline
     artifact [file ...] | ls      Share files to hive artifacts/
 
+  Queen:
+    queen                         Show Queen supervisor status
+    announce "<msg>" [--hive X]   Broadcast a royal decree to all bees
+
   Global:
-    serve [--port N]              Start web dashboard (default: 3847)
+    serve [--port N]              Start web dashboard + Queen (default: 3847)
     hives                         List all registered hives
     register [path]               Register a hive globally
     unregister <name>             Remove a hive from registry
@@ -1576,6 +1637,57 @@ cmd_config() {
 }
 
 # ════════════════════════════════════════════════════════
+#  QUEEN
+# ════════════════════════════════════════════════════════
+cmd_queen() {
+  local port
+  port=$(jq -r '.port // 3847' "$GLOBAL_CONFIG" 2>/dev/null || echo 3847)
+  local url="http://127.0.0.1:${port}/api/queen/status"
+  local resp
+  resp=$(curl -s "$url" 2>/dev/null) || die "Cannot reach fleet serve at port $port"
+  local alive
+  alive=$(echo "$resp" | jq -r '.alive')
+  if [[ "$alive" == "true" ]]; then
+    local uptime audits bees escs
+    uptime=$(echo "$resp" | jq -r '.uptime')
+    audits=$(echo "$resp" | jq -r '.auditCount')
+    bees=$(echo "$resp" | jq -r '.bees')
+    escs=$(echo "$resp" | jq -r '.escalations')
+    printf "\033[33m♛ Queen active\033[0m — uptime %ss, %s audits, %s bees tracked, %s escalations\n" "$uptime" "$audits" "$bees" "$escs"
+  else
+    printf "\033[31m♛ Queen inactive\033[0m — start with: fleet serve\n"
+  fi
+}
+
+cmd_announce() {
+  [[ $# -lt 1 ]] && die "Usage: fleet announce \"<message>\" [--hive <name>]"
+  local message="$1"
+  local hive_name=""
+  shift
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --hive) hive_name="$2"; shift 2 ;;
+      *) shift ;;
+    esac
+  done
+  if [[ -z "$hive_name" ]]; then
+    local hr
+    hr=$(hive_root 2>/dev/null) || die "Not in a hive. Use --hive <name>"
+    hive_name=$(jq -r '.name // empty' "$hr/.fleet/fleet.json" 2>/dev/null)
+    [[ -z "$hive_name" ]] && die "Cannot determine hive name"
+  fi
+  local port
+  port=$(jq -r '.port // 3847' "$GLOBAL_CONFIG" 2>/dev/null || echo 3847)
+  local resp
+  resp=$(curl -s -X POST "http://127.0.0.1:${port}/api/queen/decree" \
+    -H "Content-Type: application/json" \
+    -d "{\"hive\":\"$hive_name\",\"message\":\"$message\"}" 2>/dev/null) || die "Cannot reach fleet serve"
+  local status
+  status=$(echo "$resp" | jq -r '.status // .error')
+  echo "♛ $status"
+}
+
+# ════════════════════════════════════════════════════════
 #  MAIN
 # ════════════════════════════════════════════════════════
 main() {
@@ -1602,6 +1714,8 @@ main() {
     unregister) shift; cmd_unregister "$@" ;;
     scan)       cmd_scan ;;
     config)     shift; cmd_config "$@" ;;
+    queen)      shift; cmd_queen "$@" ;;
+    announce)   shift; cmd_announce "$@" ;;
     -v|--version|version) echo "fleet $VERSION" ;;
     -h|--help|help) show_help ;;
     "") cmd_interactive ;;
